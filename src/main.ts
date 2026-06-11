@@ -18,6 +18,8 @@ import { MissionTracker } from './gameplay/missions';
 import { RewardSystem } from './gameplay/rewards';
 import { Hud, ToastMessage } from './ui/hud';
 import { Menus } from './ui/menus';
+import { compute_difficulty } from './gameplay/difficulty';
+import { AudioManager } from './core/audio_manager';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -25,7 +27,7 @@ const FOG_DENSITY = 0.0016;
 const container = document.getElementById('app');
 if (!container) throw new Error('missing #app container');
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -71,6 +73,7 @@ const missions = new MissionTracker((mission) => {
   toast_queue.push({ title: `MISSION COMPLETE: ${mission.title}`, body: `+${mission.reward_points} pts` });
   state.score += mission.reward_points;
   rewards.add_points(mission.reward_points);
+  audio.chime();
 }, rewards.career_near_misses);
 missions.attach(state);
 
@@ -94,8 +97,11 @@ function finalize_run(): void {
 
 const hud = new Hud(document.body, state);
 const menus = new Menus(document.body);
+const audio = new AudioManager();
 
 function start_run(): void {
+  audio.init();
+  audio.horn();
   physics.reset();
   state.reset_run();
   missions.reset_run();
@@ -109,7 +115,12 @@ function start_run(): void {
   state.set_phase(GamePhase.Playing);
 }
 
-state.on('fatal', () => sinking.begin());
+state.on('graze', () => audio.collision_crunch(false));
+state.on('fatal', () => {
+  sinking.begin();
+  audio.collision_crunch(true);
+  audio.horn();
+});
 state.on('phase_change', () => {
   if (state.phase === GamePhase.GameOver) {
     finalize_run();
@@ -155,7 +166,14 @@ function frame(): void {
 
     scoring.update(delta, state, physics);
     missions.update(delta, state, physics);
+
+    const difficulty = compute_difficulty(physics.distance_travelled);
+    field.density = difficulty.iceberg_density;
+    (scene.fog as THREE.FogExp2).density = difficulty.fog_density;
+    ocean.set_fog_density(difficulty.fog_density);
   }
+
+  audio.update_engine(physics.speed);
 
   if (state.phase === GamePhase.Sinking) {
     // Engines are gone - she drifts to a stop while going down.
