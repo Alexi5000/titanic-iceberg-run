@@ -11,7 +11,7 @@ When every task is checked AND the live deploy URL works: LOOP_COMPLETE.
 ## Milestones
 
 - [x] M0 — Scaffold: Vite + TS + Three.js via bun; renderer, resize handling, RAF loop; dev server runs — DONE: vite+ts+three scaffolded, build green
-- [ ] M1 — World: dark ocean with animated water, night sky + stars + moon, exponential fog
+- [x] M1 — World: dark ocean with animated water, night sky + stars + moon, exponential fog — DONE: shader ocean with CPU wave mirror, star dome, moon + halo, FogExp2
 - [ ] M2 — Ship: procedural low-poly Titanic (hull, 4 funnels, deck lights, smoke particles), bobbing on water
 - [ ] M3 — Physics & controls: telegraph speed states, rudder steering with turning inertia, keyboard input
 - [ ] M4 — Icebergs & collision: procedural iceberg meshes, spawner ahead of ship, collision -> graze damage vs fatal hit, hull integrity
