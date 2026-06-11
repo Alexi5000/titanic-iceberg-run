@@ -63,11 +63,11 @@ export class IcebergField {
     }
   }
 
-  /** Place initial scatter so the field is not empty at run start. */
+  /** Place initial scatter so the field is not empty at run start, kept well clear of the ship. */
   seed_initial(ship_x: number, ship_z: number, heading: number): void {
     for (const berg of this.bergs) this.deactivate(berg);
     for (let i = 0; i < 10; i++) {
-      this.spawn(ship_x, ship_z, heading, SPAWN_AHEAD_MIN + Math.random() * (SPAWN_AHEAD_MAX - SPAWN_AHEAD_MIN));
+      this.spawn(ship_x, ship_z, heading, 680 + Math.random() * (SPAWN_AHEAD_MAX - 680));
     }
   }
 

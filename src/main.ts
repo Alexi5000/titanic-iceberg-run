@@ -16,6 +16,8 @@ import { SinkingSequence } from './ship/sinking_sequence';
 import { Scoring } from './gameplay/scoring';
 import { MissionTracker } from './gameplay/missions';
 import { RewardSystem } from './gameplay/rewards';
+import { Hud, ToastMessage } from './ui/hud';
+import { Menus } from './ui/menus';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -57,11 +59,7 @@ const collision = new CollisionSystem();
 const director = new CameraDirector();
 const sinking = new SinkingSequence();
 
-/** Notification queue drained by the HUD (M7). */
-export interface ToastMessage {
-  title: string;
-  body: string;
-}
+/** Notification queue drained into the HUD each frame. */
 const toast_queue: ToastMessage[] = [];
 
 const rewards = new RewardSystem((unlock) => {
@@ -94,13 +92,34 @@ function finalize_run(): void {
   if (is_best) toast_queue.push({ title: 'NEW BEST SCORE', body: `${Math.round(state.score)} points` });
 }
 
+const hud = new Hud(document.body, state);
+const menus = new Menus(document.body);
+
+function start_run(): void {
+  physics.reset();
+  state.reset_run();
+  missions.reset_run();
+  scoring.reset();
+  collision.reset();
+  sinking.reset(ship.group);
+  field.seed_initial(physics.x, physics.z, physics.heading);
+  run_finalized = false;
+  menus.hide_all();
+  hud.set_visible(true);
+  state.set_phase(GamePhase.Playing);
+}
+
 state.on('fatal', () => sinking.begin());
 state.on('phase_change', () => {
-  if (state.phase === GamePhase.GameOver) finalize_run();
+  if (state.phase === GamePhase.GameOver) {
+    finalize_run();
+    hud.set_visible(false);
+    menus.show_game_over(state, physics, rewards);
+  }
 });
 
-// Until the title menu lands (M7) the run starts immediately.
-state.set_phase(GamePhase.Playing);
+hud.set_visible(false);
+menus.show_title(rewards);
 field.seed_initial(physics.x, physics.z, physics.heading);
 
 window.addEventListener('resize', () => {
@@ -112,9 +131,20 @@ window.addEventListener('resize', () => {
 const clock = new THREE.Clock();
 let elapsed = 0;
 
+/** Mouse fallback so the run can start without keyboard focus. */
+let click_to_start = false;
+window.addEventListener('pointerdown', () => {
+  click_to_start = true;
+});
+
 function frame(): void {
   const delta = Math.min(clock.getDelta(), 0.1);
   elapsed += delta;
+
+  if (state.phase === GamePhase.Title || state.phase === GamePhase.GameOver) {
+    if (input.was_pressed('Enter') || click_to_start) start_run();
+  }
+  click_to_start = false;
 
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
@@ -149,6 +179,15 @@ function frame(): void {
   }
 
   director.update(delta, elapsed, camera, physics, ship.group.position.y, state.phase, sink_progress);
+
+  while (toast_queue.length > 0) {
+    const toast = toast_queue.shift();
+    if (toast) hud.show_toast(toast);
+  }
+
+  if (state.phase === GamePhase.Playing || state.phase === GamePhase.Sinking) {
+    hud.update(state, physics, missions, scoring);
+  }
 
   input.end_frame();
 
