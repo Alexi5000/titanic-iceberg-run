@@ -13,6 +13,9 @@ import { IcebergField } from './world/iceberg_field';
 import { CollisionSystem } from './ship/collision';
 import { CameraDirector } from './camera/camera_director';
 import { SinkingSequence } from './ship/sinking_sequence';
+import { Scoring } from './gameplay/scoring';
+import { MissionTracker } from './gameplay/missions';
+import { RewardSystem } from './gameplay/rewards';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -54,7 +57,47 @@ const collision = new CollisionSystem();
 const director = new CameraDirector();
 const sinking = new SinkingSequence();
 
+/** Notification queue drained by the HUD (M7). */
+export interface ToastMessage {
+  title: string;
+  body: string;
+}
+const toast_queue: ToastMessage[] = [];
+
+const rewards = new RewardSystem((unlock) => {
+  toast_queue.push({ title: `UNLOCKED: ${unlock.title}`, body: unlock.description });
+  apply_unlocks();
+});
+
+const missions = new MissionTracker((mission) => {
+  toast_queue.push({ title: `MISSION COMPLETE: ${mission.title}`, body: `+${mission.reward_points} pts` });
+  state.score += mission.reward_points;
+  rewards.add_points(mission.reward_points);
+}, rewards.career_near_misses);
+missions.attach(state);
+
+const scoring = new Scoring(state);
+
+function apply_unlocks(): void {
+  ship.set_searchlight(rewards.is_unlocked('searchlight'));
+  ship.set_golden_funnels(rewards.is_unlocked('golden_funnels'));
+}
+apply_unlocks();
+
+let run_finalized = false;
+function finalize_run(): void {
+  if (run_finalized) return;
+  run_finalized = true;
+  rewards.record_near_misses(missions.get_near_miss_career_total());
+  rewards.add_points(state.score * 0.1);
+  const is_best = rewards.submit_score(state.score);
+  if (is_best) toast_queue.push({ title: 'NEW BEST SCORE', body: `${Math.round(state.score)} points` });
+}
+
 state.on('fatal', () => sinking.begin());
+state.on('phase_change', () => {
+  if (state.phase === GamePhase.GameOver) finalize_run();
+});
 
 // Until the title menu lands (M7) the run starts immediately.
 state.set_phase(GamePhase.Playing);
@@ -79,6 +122,9 @@ function frame(): void {
 
     if (input.was_pressed('KeyV')) director.cycle_gameplay_view();
     if (input.was_pressed('KeyC')) director.toggle_cinematic();
+
+    scoring.update(delta, state, physics);
+    missions.update(delta, state, physics);
   }
 
   if (state.phase === GamePhase.Sinking) {

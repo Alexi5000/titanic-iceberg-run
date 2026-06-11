@@ -140,7 +140,7 @@ function create_superstructure(): THREE.Group {
   return group;
 }
 
-function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[] } {
+function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[]; funnel_material: THREE.MeshStandardMaterial } {
   const group = new THREE.Group();
   const funnel_material = new THREE.MeshStandardMaterial({ color: FUNNEL_COLOR, roughness: 0.75 });
   const top_material = new THREE.MeshStandardMaterial({ color: FUNNEL_TOP_COLOR, roughness: 0.9 });
@@ -166,7 +166,7 @@ function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[] 
     if (i < 3) smoke_origins.push(new THREE.Vector3(0, 54, funnel_z[i] - 4));
   }
 
-  return { group, smoke_origins };
+  return { group, smoke_origins, funnel_material };
 }
 
 function create_masts(): THREE.Group {
@@ -221,6 +221,8 @@ export class TitanicShip {
   readonly group: THREE.Group;
   private readonly smoke_systems: FunnelSmoke[] = [];
   private readonly inner: THREE.Group;
+  private readonly funnel_material: THREE.MeshStandardMaterial;
+  private searchlight: THREE.SpotLight | null = null;
 
   constructor() {
     this.group = new THREE.Group();
@@ -229,7 +231,8 @@ export class TitanicShip {
     this.inner.add(create_hull());
     this.inner.add(create_superstructure());
 
-    const { group: funnels, smoke_origins } = create_funnels();
+    const { group: funnels, smoke_origins, funnel_material } = create_funnels();
+    this.funnel_material = funnel_material;
     this.inner.add(funnels);
 
     for (const origin of smoke_origins) {
@@ -242,6 +245,25 @@ export class TitanicShip {
     this.inner.add(create_deck_lights());
 
     this.group.add(this.inner);
+  }
+
+  /** Cosmetic unlock: forward searchlight mounted on the foremast. */
+  set_searchlight(enabled: boolean): void {
+    if (enabled && !this.searchlight) {
+      const light = new THREE.SpotLight(0xfff4d6, 900, 700, 0.22, 0.45, 1.2);
+      light.position.set(0, 52, 90);
+      light.target.position.set(0, 4, 600);
+      this.inner.add(light);
+      this.inner.add(light.target);
+      this.searchlight = light;
+    }
+    if (this.searchlight) this.searchlight.visible = enabled;
+  }
+
+  /** Cosmetic unlock: gilded funnels. */
+  set_golden_funnels(enabled: boolean): void {
+    this.funnel_material.color.setHex(enabled ? 0xd4a747 : FUNNEL_COLOR);
+    this.funnel_material.metalness = enabled ? 0.65 : 0.0;
   }
 
   /** Bob and pitch the ship on the CPU wave mirror. Position/heading are owned by ship physics. */

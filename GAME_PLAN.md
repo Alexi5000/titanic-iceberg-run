@@ -16,7 +16,7 @@ When every task is checked AND the live deploy URL works: LOOP_COMPLETE.
 - [x] M3 — Physics & controls: telegraph speed states, rudder steering with turning inertia, keyboard input — DONE: 6-step telegraph, rudder with self-centering + speed-scaled turn authority, turn heel, W/S A/D + arrows
 - [x] M4 — Icebergs & collision: procedural iceberg meshes, spawner ahead of ship, collision -> graze damage vs fatal hit, hull integrity — DONE: pooled noisy-icosahedron bergs, corridor spawner + recycler, 5-sphere hull capsule, graze/fatal/near-miss + hull damage
 - [x] M5 — Cameras: chase cam, bridge first-person cam, cinematic director (intro fly-by, orbit shots, collision/sinking sequence), smooth transitions — DONE: camera director (V cycles chase/bridge, C cinematic with 3 cycling shots), title orbit, sinking orbit + bow-first sinking animation
-- [ ] M6 — Missions, rewards, scoring: distance score, near-miss detection, mission system with toasts, reward unlocks, localStorage persistence
+- [x] M6 — Missions, rewards, scoring: distance score, near-miss detection, mission system with toasts, reward unlocks, localStorage persistence — DONE: streak-multiplier scoring, 5 missions (incl. career mission), career points + best score + 2 cosmetic unlocks (searchlight, golden funnels) in localStorage
 - [ ] M7 — HUD & menus: telegraph + rudder dials, hull bar, score/mission UI, title screen, game-over screen with stats + restart
 - [ ] M8 — Polish: difficulty ramp, audio (engine hum, horn, collision crunch, ambience via WebAudio), ice-field density waves, performance pass (60fps target)
 - [ ] M9 — Ship it: `bun run build` clean, README, GitHub repo created + pushed, deployed to free static hosting, live URL verified
