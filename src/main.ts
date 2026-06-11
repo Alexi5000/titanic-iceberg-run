@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { Ocean } from './world/ocean';
 import { create_sky } from './world/sky';
+import { TitanicShip } from './ship/titanic_model';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -23,14 +24,17 @@ scene.background = FOG_COLOR.clone();
 scene.fog = new THREE.FogExp2(FOG_COLOR.getHex(), FOG_DENSITY);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 8000);
-camera.position.set(0, 24, 90);
-camera.lookAt(0, 4, 0);
+camera.position.set(120, 60, -200);
+camera.lookAt(0, 15, 0);
 
 const sky = create_sky();
 scene.add(sky.group);
 
 const ocean = new Ocean(FOG_COLOR, FOG_DENSITY, sky.moon_dir);
 scene.add(ocean.mesh);
+
+const ship = new TitanicShip();
+scene.add(ship.group);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -45,7 +49,8 @@ function frame(): void {
   const delta = Math.min(clock.getDelta(), 0.1);
   elapsed += delta;
 
-  ocean.update(elapsed, camera, 0, 0);
+  ocean.update(elapsed, camera, ship.group.position.x, ship.group.position.z);
+  ship.update(elapsed, delta);
 
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
