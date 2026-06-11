@@ -18,7 +18,7 @@ When every task is checked AND the live deploy URL works: LOOP_COMPLETE.
 - [x] M5 — Cameras: chase cam, bridge first-person cam, cinematic director (intro fly-by, orbit shots, collision/sinking sequence), smooth transitions — DONE: camera director (V cycles chase/bridge, C cinematic with 3 cycling shots), title orbit, sinking orbit + bow-first sinking animation
 - [x] M6 — Missions, rewards, scoring: distance score, near-miss detection, mission system with toasts, reward unlocks, localStorage persistence — DONE: streak-multiplier scoring, 5 missions (incl. career mission), career points + best score + 2 cosmetic unlocks (searchlight, golden funnels) in localStorage
 - [x] M7 — HUD & menus: telegraph + rudder dials, hull bar, score/mission UI, title screen, game-over screen with stats + restart — DONE: full DOM HUD (telegraph steps, rudder needle, hull bar, missions panel, toasts, damage vignette), title + game-over screens, Enter/click to start; browser-verified with coordinate probe
-- [ ] M8 — Polish: difficulty ramp, audio (engine hum, horn, collision crunch, ambience via WebAudio), ice-field density waves, performance pass (60fps target)
+- [x] M8 — Polish: difficulty ramp, audio (engine hum, horn, collision crunch, ambience via WebAudio), ice-field density waves, performance pass (60fps target) — DONE: distance ramp + sine density waves + fog thickening, fully procedural WebAudio (ambience, engine, horn, crunch, chime), high-performance renderer hints
 - [ ] M9 — Ship it: `bun run build` clean, README, GitHub repo created + pushed, deployed to free static hosting, live URL verified
 
 ## Rules
