@@ -245,7 +245,7 @@ export class TitanicShip {
   }
 
   /** Bob and pitch the ship on the CPU wave mirror. Position/heading are owned by ship physics. */
-  update(time: number, delta: number): void {
+  update(time: number, delta: number, turn_heel = 0): void {
     const x = this.group.position.x;
     const z = this.group.position.z;
     const yaw = this.group.rotation.y;
@@ -261,7 +261,7 @@ export class TitanicShip {
 
     this.group.position.y = (h_bow + h_stern) * 0.5 - 6;
     this.inner.rotation.x = Math.atan2(h_stern - h_bow, SHIP_LENGTH * 0.76) * 0.8;
-    this.inner.rotation.z = Math.atan2(h_port - h_starboard, 24) * 0.45;
+    this.inner.rotation.z = Math.atan2(h_port - h_starboard, 24) * 0.45 + turn_heel;
 
     for (const smoke of this.smoke_systems) smoke.update(delta);
   }

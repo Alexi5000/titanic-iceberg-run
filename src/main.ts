@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import { Ocean } from './world/ocean';
 import { create_sky } from './world/sky';
 import { TitanicShip } from './ship/titanic_model';
+import { ShipPhysics } from './ship/ship_physics';
+import { InputManager } from './core/input_manager';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -36,6 +38,9 @@ scene.add(ocean.mesh);
 const ship = new TitanicShip();
 scene.add(ship.group);
 
+const physics = new ShipPhysics();
+const input = new InputManager();
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -49,8 +54,24 @@ function frame(): void {
   const delta = Math.min(clock.getDelta(), 0.1);
   elapsed += delta;
 
-  ocean.update(elapsed, camera, ship.group.position.x, ship.group.position.z);
-  ship.update(elapsed, delta);
+  physics.read_input(input);
+  physics.update(delta);
+
+  ship.group.position.x = physics.x;
+  ship.group.position.z = physics.z;
+  ship.group.rotation.y = physics.heading;
+
+  ocean.update(elapsed, camera, physics.x, physics.z);
+  ship.update(elapsed, delta, physics.turn_heel);
+
+  // Temporary chase camera until the camera director lands (M5).
+  const cam_dist = 220;
+  const cam_x = physics.x - Math.sin(physics.heading) * cam_dist;
+  const cam_z = physics.z - Math.cos(physics.heading) * cam_dist;
+  camera.position.lerp(new THREE.Vector3(cam_x, 70, cam_z), 1 - Math.exp(-2.5 * delta));
+  camera.lookAt(physics.x, 14, physics.z);
+
+  input.end_frame();
 
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
