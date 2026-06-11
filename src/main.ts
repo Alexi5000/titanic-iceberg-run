@@ -8,6 +8,9 @@ import { create_sky } from './world/sky';
 import { TitanicShip } from './ship/titanic_model';
 import { ShipPhysics } from './ship/ship_physics';
 import { InputManager } from './core/input_manager';
+import { GameState, GamePhase } from './core/game_state';
+import { IcebergField } from './world/iceberg_field';
+import { CollisionSystem } from './ship/collision';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -41,6 +44,15 @@ scene.add(ship.group);
 const physics = new ShipPhysics();
 const input = new InputManager();
 
+const state = new GameState();
+const field = new IcebergField();
+scene.add(field.group);
+const collision = new CollisionSystem();
+
+// Until the title menu lands (M7) the run starts immediately.
+state.set_phase(GamePhase.Playing);
+field.seed_initial(physics.x, physics.z, physics.heading);
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -54,8 +66,14 @@ function frame(): void {
   const delta = Math.min(clock.getDelta(), 0.1);
   elapsed += delta;
 
-  physics.read_input(input);
+  if (state.phase === GamePhase.Playing) {
+    physics.read_input(input);
+    state.run_time += delta;
+  }
   physics.update(delta);
+
+  field.update(delta, elapsed, physics.x, physics.z, physics.heading, physics.speed);
+  collision.update(delta, physics, field, state);
 
   ship.group.position.x = physics.x;
   ship.group.position.z = physics.z;
