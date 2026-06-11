@@ -11,6 +11,8 @@ import { InputManager } from './core/input_manager';
 import { GameState, GamePhase } from './core/game_state';
 import { IcebergField } from './world/iceberg_field';
 import { CollisionSystem } from './ship/collision';
+import { CameraDirector } from './camera/camera_director';
+import { SinkingSequence } from './ship/sinking_sequence';
 
 const FOG_COLOR = new THREE.Color(0x060d18);
 const FOG_DENSITY = 0.0016;
@@ -49,6 +51,11 @@ const field = new IcebergField();
 scene.add(field.group);
 const collision = new CollisionSystem();
 
+const director = new CameraDirector();
+const sinking = new SinkingSequence();
+
+state.on('fatal', () => sinking.begin());
+
 // Until the title menu lands (M7) the run starts immediately.
 state.set_phase(GamePhase.Playing);
 field.seed_initial(physics.x, physics.z, physics.heading);
@@ -69,6 +76,14 @@ function frame(): void {
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
     state.run_time += delta;
+
+    if (input.was_pressed('KeyV')) director.cycle_gameplay_view();
+    if (input.was_pressed('KeyC')) director.toggle_cinematic();
+  }
+
+  if (state.phase === GamePhase.Sinking) {
+    // Engines are gone - she drifts to a stop while going down.
+    physics.speed *= Math.exp(-0.6 * delta);
   }
   physics.update(delta);
 
@@ -82,12 +97,12 @@ function frame(): void {
   ocean.update(elapsed, camera, physics.x, physics.z);
   ship.update(elapsed, delta, physics.turn_heel);
 
-  // Temporary chase camera until the camera director lands (M5).
-  const cam_dist = 220;
-  const cam_x = physics.x - Math.sin(physics.heading) * cam_dist;
-  const cam_z = physics.z - Math.cos(physics.heading) * cam_dist;
-  camera.position.lerp(new THREE.Vector3(cam_x, 70, cam_z), 1 - Math.exp(-2.5 * delta));
-  camera.lookAt(physics.x, 14, physics.z);
+  const sink_progress = sinking.update(delta, ship.group);
+  if (sinking.finished && state.phase === GamePhase.Sinking) {
+    state.set_phase(GamePhase.GameOver);
+  }
+
+  director.update(delta, elapsed, camera, physics, ship.group.position.y, state.phase, sink_progress);
 
   input.end_frame();
 
