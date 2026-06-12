@@ -13,7 +13,7 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 - [x] D1.3 Post-processing: EffectComposer bloom + vignette, quality toggle to disable — DONE: bloom + animated vignette with pulse hook for slow-mo, Q key toggles + persists, falls back to direct render
 - [x] D1.4 Juice pass: screen shake on graze, near-miss hit-stop + slow-mo + FOV punch + audio sweep, wake foam trail, bow spray, ice-shard burst, springy HUD, bounce intro, reduced-motion toggle — DONE: JuiceSystem (slow-mo/shake/FOV/intro bounce), WakeEffects pools (foam/spray/shards), master lowpass sweep, HUD thunk/wobble/overshoot, M key reduced motion
 - [x] D1.5 Bumpable flotsam: ice chunks shoved aside by the bow with fake impulse physics — DONE: 16 toon ice chunks + crates with bow impulse, spin, wave bobbing, recycle ahead
-- [ ] D1.6 Drop 1 QA + push + verify both live URLs
+- [x] D1.6 Drop 1 QA + push + verify both live URLs — DONE: browser QA passed (palettes, intro bounce, foam/spray, flotsam, toon look, postfx, zero console errors), pushed
 
 ## Drop 2 — Cards + Onboarding
 
