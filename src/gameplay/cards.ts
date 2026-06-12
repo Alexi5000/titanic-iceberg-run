@@ -44,6 +44,10 @@ export const CARD_DEFS: CardDef[] = [
   { id: 'pea_souper', suit: 'feats', rarity: 'rare', title: 'Pea Souper', flavor: 'Sailing by sound and superstition.', hint: 'Sail a mile through the deepest fog' },
   { id: 'collector', suit: 'feats', rarity: 'rare', title: 'The Collector', flavor: 'A pocket full of frozen memories.', hint: 'Own 12 cards' },
   { id: 'iceberg_whisperer', suit: 'feats', rarity: 'legendary', title: 'Iceberg Whisperer', flavor: 'The North Atlantic filed a complaint.', hint: 'Complete all 5 missions in a single run' },
+
+  // Daily Voyage exclusives.
+  { id: 'first_light', suit: 'feats', rarity: 'uncommon', title: 'First Light', flavor: 'Same ocean as everyone. Better captain.', hint: 'Complete a Daily Voyage' },
+  { id: 'streak_keeper', suit: 'feats', rarity: 'rare', title: 'Streak Keeper', flavor: 'Three dawns, three crossings, zero excuses.', hint: 'Reach a 3-day Daily Voyage streak' },
 ];
 
 export function card_def(id: string): CardDef | undefined {
@@ -147,6 +151,12 @@ export class CardDetector {
     if (ctx.grazes_run === 0 && ctx.distance >= 2400) this.try_earn('the_unsinkable');
     if (ctx.career_distance + ctx.distance >= 6000) this.try_earn('long_haul');
     if (ctx.cards_owned >= 12) this.try_earn('collector');
+  }
+
+  /** Call when a daily voyage attempt is scored. */
+  on_daily_scored(streak: number): void {
+    this.try_earn('first_light');
+    if (streak >= 3) this.try_earn('streak_keeper');
   }
 
   /** Call once at game over. */

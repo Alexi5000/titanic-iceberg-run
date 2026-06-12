@@ -26,6 +26,7 @@ import { JuiceSystem } from './gameplay/juice';
 import { WakeEffects } from './ship/wake_effects';
 import { Flotsam } from './world/flotsam';
 import { CardDetector, CardDef, CardContext } from './gameplay/cards';
+
 import { CardCollection, EarnedCard } from './gameplay/card_collection';
 import { CardGallery, build_reveal_block } from './ui/card_ui';
 import { card_art_for } from './ui/card_art';
@@ -33,6 +34,8 @@ import { CameraMode } from './camera/camera_director';
 import { Onboarding } from './core/onboarding';
 import { SkinSystem } from './gameplay/skins';
 import { TouchControls, is_touch_device } from './ui/touch_controls';
+import { DailySystem, seeded_rng, today_string } from './gameplay/daily';
+import { CARD_DEFS } from './gameplay/cards';
 
 let palette: Palette = load_palette();
 
@@ -189,13 +192,25 @@ function card_context(): CardContext {
   };
 }
 
+const daily = new DailySystem();
+let game_mode: 'endless' | 'daily' = 'endless';
+
 const gallery_button = document.createElement('button');
 gallery_button.className = 'menu-button';
 gallery_button.addEventListener('click', () => gallery.open());
-menus.title_extra.appendChild(gallery_button);
+
+const daily_button = document.createElement('button');
+daily_button.className = 'menu-button';
+daily_button.style.marginLeft = '10px';
+daily_button.addEventListener('click', () => start_run('daily'));
+menus.title_extra.append(gallery_button, daily_button);
 
 function refresh_gallery_button(): void {
-  gallery_button.textContent = `Cards ${collection.owned_count}/24  [G]`;
+  gallery_button.textContent = `Cards ${collection.owned_count}/${CARD_DEFS.length}  [G]`;
+  const streak = daily.streak;
+  daily_button.textContent = daily.played_today()
+    ? `Daily done - streak ${streak}  [D: practice]`
+    : `Daily Voyage${streak > 0 ? ` - streak ${streak}` : ''}  [D]`;
 }
 refresh_gallery_button();
 
@@ -212,7 +227,8 @@ touch.bind(
 );
 
 
-function start_run(): void {
+function start_run(mode: 'endless' | 'daily' = 'endless'): void {
+  game_mode = mode;
   audio.init();
   audio.horn();
   physics.reset();
@@ -222,6 +238,7 @@ function start_run(): void {
   collision.reset();
   juice.reset();
   sinking.reset(ship.group);
+  field.set_rng(mode === 'daily' ? seeded_rng(today_string()) : Math.random);
   field.seed_initial(physics.x, physics.z, physics.heading);
   flotsam.scatter(physics.x, physics.z);
   detector.reset_run();
@@ -259,10 +276,26 @@ state.on('phase_change', () => {
   if (state.phase === GamePhase.GameOver) {
     detector.on_run_end(card_context());
     collection.record_run(physics.distance_travelled);
+    let daily_note = '';
+    if (game_mode === 'daily') {
+      const streak = daily.record_scored_run(state.score);
+      if (streak !== null) {
+        daily_note = `DAILY VOYAGE LOGGED - streak ${streak} day${streak === 1 ? '' : 's'}`;
+        detector.on_daily_scored(streak);
+      } else {
+        daily_note = 'PRACTICE RUN - today\'s daily was already scored';
+      }
+    }
     finalize_run();
     hud.set_visible(false);
     menus.show_game_over(state, physics, rewards);
     menus.gameover_extra.replaceChildren(build_reveal_block(run_new_cards));
+    if (daily_note) {
+      const note = document.createElement('div');
+      note.className = 'gameover-cards-label';
+      note.textContent = daily_note;
+      menus.gameover_extra.prepend(note);
+    }
     refresh_gallery_button();
   }
 });
@@ -312,7 +345,8 @@ function frame(): void {
       else gallery.open();
     }
     if (input.was_pressed('Escape') && gallery.is_open) gallery.close();
-    if ((input.was_pressed('Enter') || click_to_start) && !gallery.is_open) start_run();
+    if (input.was_pressed('KeyD') && !gallery.is_open) start_run('daily');
+    else if ((input.was_pressed('Enter') || click_to_start) && !gallery.is_open) start_run();
   }
   click_to_start = false;
 

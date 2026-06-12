@@ -57,6 +57,8 @@ export class IcebergField {
 
   private readonly material: THREE.MeshToonMaterial;
   private spawn_cooldown = 0;
+  /** Spawn-layout RNG; replaced with a seeded generator for Daily Voyage determinism. */
+  private rng: () => number = Math.random;
 
   constructor() {
     this.group = new THREE.Group();
@@ -73,6 +75,10 @@ export class IcebergField {
     }
   }
 
+  set_rng(rng: () => number): void {
+    this.rng = rng;
+  }
+
   set_palette(palette: Palette): void {
     this.material.color.setHex(palette.berg_color);
     this.material.emissive.setHex(palette.berg_emissive);
@@ -82,7 +88,7 @@ export class IcebergField {
   seed_initial(ship_x: number, ship_z: number, heading: number): void {
     for (const berg of this.bergs) this.deactivate(berg);
     for (let i = 0; i < 10; i++) {
-      this.spawn(ship_x, ship_z, heading, 680 + Math.random() * (SPAWN_AHEAD_MAX - 680));
+      this.spawn(ship_x, ship_z, heading, 680 + this.rng() * (SPAWN_AHEAD_MAX - 680));
     }
   }
 
@@ -100,10 +106,10 @@ export class IcebergField {
     const right_x = Math.cos(heading);
     const right_z = -Math.sin(heading);
 
-    const ahead = ahead_override ?? SPAWN_AHEAD_MIN + Math.random() * (SPAWN_AHEAD_MAX - SPAWN_AHEAD_MIN);
-    const lateral = (Math.random() * 2 - 1) * SPAWN_HALF_WIDTH;
+    const ahead = ahead_override ?? SPAWN_AHEAD_MIN + this.rng() * (SPAWN_AHEAD_MAX - SPAWN_AHEAD_MIN);
+    const lateral = (this.rng() * 2 - 1) * SPAWN_HALF_WIDTH;
 
-    const size = 18 + Math.random() * 46;
+    const size = 18 + this.rng() * 46;
     berg.radius = size * 0.82;
     berg.mesh.scale.setScalar(size);
     berg.mesh.position.set(
@@ -111,7 +117,7 @@ export class IcebergField {
       0,
       ship_z + fwd_z * ahead + right_z * lateral,
     );
-    berg.mesh.rotation.y = Math.random() * Math.PI * 2;
+    berg.mesh.rotation.y = this.rng() * Math.PI * 2;
     berg.mesh.visible = true;
     berg.active = true;
     berg.near_miss_armed = true;
