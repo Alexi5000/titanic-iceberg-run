@@ -36,6 +36,7 @@ export class Menus {
       '<b>V</b> &nbsp;Toggle bridge / chase view',
       '<b>C</b> &nbsp;Cinematic camera',
       '<b>P</b> &nbsp;Mood: Dusk / Night / Aurora',
+      '<b>Q</b> &nbsp;Quality: effects on / off',
       '',
       'Avoid the icebergs. She does not turn quickly.',
     ].join('<br>');

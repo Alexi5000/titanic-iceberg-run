@@ -21,6 +21,7 @@ import { Hud, ToastMessage } from './ui/hud';
 import { Menus } from './ui/menus';
 import { compute_difficulty } from './gameplay/difficulty';
 import { AudioManager } from './core/audio_manager';
+import { PostProcessing } from './core/post_processing';
 
 let palette: Palette = load_palette();
 
@@ -145,10 +146,13 @@ hud.set_visible(false);
 menus.show_title(rewards);
 field.seed_initial(physics.x, physics.z, physics.heading);
 
+const post = new PostProcessing(renderer, scene, camera);
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  post.set_size(window.innerWidth, window.innerHeight);
 });
 
 const clock = new THREE.Clock();
@@ -170,6 +174,7 @@ function frame(): void {
   click_to_start = false;
 
   if (input.was_pressed('KeyP')) apply_palette(next_palette(palette));
+  if (input.was_pressed('KeyQ')) post.toggle();
 
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
@@ -224,7 +229,7 @@ function frame(): void {
 
   input.end_frame();
 
-  renderer.render(scene, camera);
+  post.render();
   requestAnimationFrame(frame);
 }
 
