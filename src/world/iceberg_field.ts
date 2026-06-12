@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { wave_height } from './ocean';
 import { Palette } from './palette';
+import { make_toon_material } from './toon_shading';
 
 export interface Iceberg {
   mesh: THREE.Mesh;
@@ -20,16 +21,27 @@ const SPAWN_HALF_WIDTH = 420;
 const DESPAWN_BEHIND = 320;
 
 function create_iceberg_geometry(rng: () => number): THREE.BufferGeometry {
-  const geometry = new THREE.IcosahedronGeometry(1, 1);
+  // Non-indexed so each face gets its own normal - keeps the faceted ice look with toon shading.
+  const geometry = new THREE.IcosahedronGeometry(1, 1).toNonIndexed();
   const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
+
+  // Position-seeded hash so duplicated (non-indexed) vertices displace identically.
+  const seed_a = rng() * 37;
+  const seed_b = rng() * 91;
+  const hash = (x: number, y: number, z: number) => {
+    const s = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719 + seed_a) * (43758.5453 + seed_b);
+    return s - Math.floor(s);
+  };
 
   for (let i = 0; i < positions.count; i++) {
     const x = positions.getX(i);
     const y = positions.getY(i);
     const z = positions.getZ(i);
-    const jitter = 0.62 + rng() * 0.75;
+    const n1 = hash(x, y, z);
+    const n2 = hash(z, x, y);
+    const jitter = 0.62 + n1 * 0.75;
     // Stretch tall spires upward, flatten the waterline area.
-    const vertical = y > 0 ? 1.0 + rng() * 0.9 : 0.55;
+    const vertical = y > 0 ? 1.0 + n2 * 0.9 : 0.55;
     positions.setXYZ(i, x * jitter, y * jitter * vertical, z * jitter);
   }
 
@@ -43,16 +55,13 @@ export class IcebergField {
   /** Spawn probability scalar raised by the difficulty ramp. */
   density = 1;
 
-  private readonly material: THREE.MeshStandardMaterial;
+  private readonly material: THREE.MeshToonMaterial;
   private spawn_cooldown = 0;
 
   constructor() {
     this.group = new THREE.Group();
-    this.material = new THREE.MeshStandardMaterial({
+    this.material = make_toon_material({
       color: 0xd7e6f2,
-      roughness: 0.55,
-      metalness: 0.05,
-      flatShading: true,
       emissive: 0x16222e,
     });
 

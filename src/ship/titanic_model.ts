@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { wave_height } from '../world/ocean';
+import { make_toon_material } from '../world/toon_shading';
 
 export const SHIP_LENGTH = 269;
 export const SHIP_BEAM = 28;
@@ -87,7 +88,7 @@ class FunnelSmoke {
 
 function create_hull(): THREE.Group {
   const hull = new THREE.Group();
-  const hull_material = new THREE.MeshStandardMaterial({ color: HULL_COLOR, roughness: 0.85, metalness: 0.2 });
+  const hull_material = make_toon_material({ color: HULL_COLOR });
 
   const mid = new THREE.Mesh(new THREE.BoxGeometry(SHIP_BEAM, 20, 210), hull_material);
   mid.position.set(0, 4, 0);
@@ -113,7 +114,7 @@ function create_hull(): THREE.Group {
   // Red-brown boot-top band near the waterline.
   const band = new THREE.Mesh(
     new THREE.BoxGeometry(SHIP_BEAM + 0.4, 2.2, 210),
-    new THREE.MeshStandardMaterial({ color: HULL_BAND_COLOR, roughness: 0.9 }),
+    make_toon_material({ color: HULL_BAND_COLOR }),
   );
   band.position.set(0, -4.4, 0);
   hull.add(band);
@@ -123,7 +124,7 @@ function create_hull(): THREE.Group {
 
 function create_superstructure(): THREE.Group {
   const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({ color: SUPERSTRUCTURE_COLOR, roughness: 0.7 });
+  const material = make_toon_material({ color: SUPERSTRUCTURE_COLOR });
 
   const deck_a = new THREE.Mesh(new THREE.BoxGeometry(24, 7, 150), material);
   deck_a.position.set(0, 17.5, -4);
@@ -140,10 +141,10 @@ function create_superstructure(): THREE.Group {
   return group;
 }
 
-function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[]; funnel_material: THREE.MeshStandardMaterial } {
+function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[]; funnel_material: THREE.MeshToonMaterial } {
   const group = new THREE.Group();
-  const funnel_material = new THREE.MeshStandardMaterial({ color: FUNNEL_COLOR, roughness: 0.75 });
-  const top_material = new THREE.MeshStandardMaterial({ color: FUNNEL_TOP_COLOR, roughness: 0.9 });
+  const funnel_material = make_toon_material({ color: FUNNEL_COLOR });
+  const top_material = make_toon_material({ color: FUNNEL_TOP_COLOR });
   const smoke_origins: THREE.Vector3[] = [];
 
   const funnel_z = [52, 17, -18, -53];
@@ -171,7 +172,7 @@ function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[];
 
 function create_masts(): THREE.Group {
   const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({ color: 0x2a2620, roughness: 0.9 });
+  const material = make_toon_material({ color: 0x2a2620 });
 
   const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 46, 6), material);
   fore.position.set(0, 38, 88);
@@ -221,7 +222,7 @@ export class TitanicShip {
   readonly group: THREE.Group;
   private readonly smoke_systems: FunnelSmoke[] = [];
   private readonly inner: THREE.Group;
-  private readonly funnel_material: THREE.MeshStandardMaterial;
+  private readonly funnel_material: THREE.MeshToonMaterial;
   private searchlight: THREE.SpotLight | null = null;
 
   constructor() {
@@ -263,7 +264,7 @@ export class TitanicShip {
   /** Cosmetic unlock: gilded funnels. */
   set_golden_funnels(enabled: boolean): void {
     this.funnel_material.color.setHex(enabled ? 0xd4a747 : FUNNEL_COLOR);
-    this.funnel_material.metalness = enabled ? 0.65 : 0.0;
+    this.funnel_material.emissive.setHex(enabled ? 0x4a3408 : 0x000000);
   }
 
   /** Bob and pitch the ship on the CPU wave mirror. Position/heading are owned by ship physics. */
