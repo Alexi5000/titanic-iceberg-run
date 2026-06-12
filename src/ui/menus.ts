@@ -37,6 +37,7 @@ export class Menus {
       '<b>C</b> &nbsp;Cinematic camera',
       '<b>P</b> &nbsp;Mood: Dusk / Night / Aurora',
       '<b>Q</b> &nbsp;Quality: effects on / off',
+      '<b>M</b> &nbsp;Reduced motion on / off',
       '',
       'Avoid the icebergs. She does not turn quickly.',
     ].join('<br>');

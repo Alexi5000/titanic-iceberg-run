@@ -11,8 +11,8 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 - [x] D1.1 Palette system: `src/world/palette.ts` config drives ocean/sky/fog/berg/ship accents; 3 moods (Dusk default, Night, Aurora); gradient sky dome shader — DONE: palette config + persistence, gradient dome with aurora ribbons, P key cycles moods live
 - [x] D1.2 Stylized shading: gradient-ramp lighting on ship + bergs, warm rim light, saturated ice — DONE: shared 5-step toon gradient on all ship/berg materials, faceted non-indexed bergs with seeded noise, rim light in sky rig
 - [x] D1.3 Post-processing: EffectComposer bloom + vignette, quality toggle to disable — DONE: bloom + animated vignette with pulse hook for slow-mo, Q key toggles + persists, falls back to direct render
-- [ ] D1.4 Juice pass: screen shake on graze, near-miss hit-stop + slow-mo + FOV punch + audio sweep, wake foam trail, bow spray, ice-shard burst, springy HUD, bounce intro, reduced-motion toggle
-- [ ] D1.5 Bumpable flotsam: ice chunks shoved aside by the bow with fake impulse physics
+- [x] D1.4 Juice pass: screen shake on graze, near-miss hit-stop + slow-mo + FOV punch + audio sweep, wake foam trail, bow spray, ice-shard burst, springy HUD, bounce intro, reduced-motion toggle — DONE: JuiceSystem (slow-mo/shake/FOV/intro bounce), WakeEffects pools (foam/spray/shards), master lowpass sweep, HUD thunk/wobble/overshoot, M key reduced motion
+- [x] D1.5 Bumpable flotsam: ice chunks shoved aside by the bow with fake impulse physics — DONE: 16 toon ice chunks + crates with bow impulse, spin, wave bobbing, recycle ahead
 - [ ] D1.6 Drop 1 QA + push + verify both live URLs
 
 ## Drop 2 — Cards + Onboarding

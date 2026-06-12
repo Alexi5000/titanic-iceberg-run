@@ -5,6 +5,7 @@
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private master_filter: BiquadFilterNode | null = null;
   private engine_osc: OscillatorNode | null = null;
   private engine_gain: GainNode | null = null;
   private ambience_gain: GainNode | null = null;
@@ -18,10 +19,22 @@ export class AudioManager {
     this.ctx = new AudioContext();
     this.master = this.ctx.createGain();
     this.master.gain.value = 0.6;
-    this.master.connect(this.ctx.destination);
+
+    // Master lowpass for the slow-mo "underwater" sweep.
+    this.master_filter = this.ctx.createBiquadFilter();
+    this.master_filter.type = 'lowpass';
+    this.master_filter.frequency.value = 19000;
+    this.master.connect(this.master_filter).connect(this.ctx.destination);
 
     this.start_ambience();
     this.start_engine();
+  }
+
+  /** Slow-mo amount 0..1 sweeps the master lowpass down for a muffled effect. */
+  set_slowmo(amount: number): void {
+    if (!this.ctx || !this.master_filter) return;
+    const target = 19000 - amount * 18200;
+    this.master_filter.frequency.setTargetAtTime(target, this.ctx.currentTime, 0.05);
   }
 
   private noise_buffer(seconds: number): AudioBuffer {

@@ -132,7 +132,19 @@ const CSS = `
     border-radius: 8px;
     padding: 10px 22px;
     text-align: center;
-    animation: toast-in 0.35s ease, toast-out 0.5s ease 3.4s forwards;
+    animation: toast-in 0.45s cubic-bezier(0.2, 1.9, 0.4, 1), toast-out 0.5s ease 3.4s forwards;
+  }
+  .telegraph-label.pop { animation: hud-thunk 0.32s cubic-bezier(0.2, 2.4, 0.4, 1); }
+  @keyframes hud-thunk { 0% { transform: scale(1.4) translateY(-2px); } 100% { transform: scale(1) translateY(0); } }
+  .bar-shell.wobble { animation: hud-wobble 0.45s ease; }
+  @keyframes hud-wobble {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    45% { transform: translateX(4px); }
+    70% { transform: translateX(-2px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toast, .telegraph-label.pop, .bar-shell.wobble { animation: none; }
   }
   .toast-title { font-size: 15px; font-weight: 700; color: #ecd9a0; letter-spacing: 1.5px; }
   .toast-body { font-size: 12.5px; opacity: 0.85; margin-top: 2px; }

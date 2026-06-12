@@ -29,6 +29,8 @@ export class Hud {
   private readonly mult_el: HTMLDivElement;
   private readonly hull_fill: HTMLDivElement;
   private readonly hull_label: HTMLDivElement;
+  private hull_shell!: HTMLDivElement;
+  private last_telegraph: TelegraphOrder | null = null;
   private readonly telegraph_steps: HTMLDivElement[] = [];
   private readonly telegraph_label: HTMLDivElement;
   private readonly speed_el: HTMLDivElement;
@@ -90,7 +92,8 @@ export class Hud {
     bottom_right.className = 'hud-corner hud-bottom-right';
     this.hull_label = document.createElement('div');
     this.hull_label.className = 'hud-sub';
-    const hull_shell = document.createElement('div');
+    this.hull_shell = document.createElement('div');
+    const hull_shell = this.hull_shell;
     hull_shell.className = 'bar-shell';
     this.hull_fill = document.createElement('div');
     this.hull_fill.className = 'bar-fill';
@@ -140,6 +143,9 @@ export class Hud {
   private flash_damage(): void {
     this.vignette.classList.add('flash');
     window.setTimeout(() => this.vignette.classList.remove('flash'), 120);
+    this.hull_shell.classList.remove('wobble');
+    void this.hull_shell.offsetWidth; // restart animation
+    this.hull_shell.classList.add('wobble');
   }
 
   update(state: GameState, physics: ShipPhysics, missions: MissionTracker, scoring: Scoring): void {
@@ -147,6 +153,12 @@ export class Hud {
     this.distance_el.textContent = `${nautical_miles(physics.distance_travelled).toFixed(2)} nm travelled`;
     this.mult_el.textContent = scoring.multiplier > 1 ? `x${scoring.multiplier.toFixed(1)} streak` : '';
 
+    if (this.last_telegraph !== physics.telegraph) {
+      this.last_telegraph = physics.telegraph;
+      this.telegraph_label.classList.remove('pop');
+      void this.telegraph_label.offsetWidth;
+      this.telegraph_label.classList.add('pop');
+    }
     this.telegraph_label.textContent = TELEGRAPH_LABELS[physics.telegraph];
     for (let i = 0; i < this.telegraph_steps.length; i++) {
       this.telegraph_steps[i].classList.toggle('active', TELEGRAPH_ORDER_SEQUENCE[i] === physics.telegraph);

@@ -22,6 +22,9 @@ import { Menus } from './ui/menus';
 import { compute_difficulty } from './gameplay/difficulty';
 import { AudioManager } from './core/audio_manager';
 import { PostProcessing } from './core/post_processing';
+import { JuiceSystem } from './gameplay/juice';
+import { WakeEffects } from './ship/wake_effects';
+import { Flotsam } from './world/flotsam';
 
 let palette: Palette = load_palette();
 
@@ -55,6 +58,7 @@ function apply_palette(next: Palette): void {
   scene.add(sky.group);
   ocean.set_palette(palette);
   field.set_palette(palette);
+  flotsam.set_palette(palette);
   (scene.fog as THREE.FogExp2).color.setHex(palette.fog_color);
   (scene.fog as THREE.FogExp2).density = palette.fog_density_base;
 }
@@ -73,6 +77,15 @@ const collision = new CollisionSystem();
 
 const director = new CameraDirector();
 const sinking = new SinkingSequence();
+const juice = new JuiceSystem();
+
+const wake = new WakeEffects();
+scene.add(wake.group);
+
+const flotsam = new Flotsam();
+flotsam.set_palette(palette);
+flotsam.scatter(0, 0);
+scene.add(flotsam.group);
 
 /** Notification queue drained into the HUD each frame. */
 const toast_queue: ToastMessage[] = [];
@@ -120,19 +133,26 @@ function start_run(): void {
   missions.reset_run();
   scoring.reset();
   collision.reset();
+  juice.reset();
   sinking.reset(ship.group);
   field.seed_initial(physics.x, physics.z, physics.heading);
+  flotsam.scatter(physics.x, physics.z);
   run_finalized = false;
   menus.hide_all();
   hud.set_visible(true);
   state.set_phase(GamePhase.Playing);
 }
 
-state.on('graze', () => audio.collision_crunch(false));
+state.on('graze', () => {
+  audio.collision_crunch(false);
+  juice.trigger_graze();
+});
+state.on('near_miss', () => juice.trigger_near_miss());
 state.on('fatal', () => {
   sinking.begin();
   audio.collision_crunch(true);
   audio.horn();
+  juice.trigger_fatal();
 });
 state.on('phase_change', () => {
   if (state.phase === GamePhase.GameOver) {
@@ -145,6 +165,7 @@ state.on('phase_change', () => {
 hud.set_visible(false);
 menus.show_title(rewards);
 field.seed_initial(physics.x, physics.z, physics.heading);
+juice.begin_intro();
 
 const post = new PostProcessing(renderer, scene, camera);
 
@@ -165,7 +186,9 @@ window.addEventListener('pointerdown', () => {
 });
 
 function frame(): void {
-  const delta = Math.min(clock.getDelta(), 0.1);
+  const raw_delta = Math.min(clock.getDelta(), 0.1);
+  juice.update(raw_delta);
+  const delta = raw_delta * juice.time_scale;
   elapsed += delta;
 
   if (state.phase === GamePhase.Title || state.phase === GamePhase.GameOver) {
@@ -175,6 +198,7 @@ function frame(): void {
 
   if (input.was_pressed('KeyP')) apply_palette(next_palette(palette));
   if (input.was_pressed('KeyQ')) post.toggle();
+  if (input.was_pressed('KeyM')) juice.toggle_reduced_motion();
 
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
@@ -201,7 +225,17 @@ function frame(): void {
   physics.update(delta);
 
   field.update(delta, elapsed, physics.x, physics.z, physics.heading, physics.speed);
-  collision.update(delta, physics, field, state);
+  const collision_result = collision.update(delta, physics, field, state);
+  if (collision_result.hit && collision_result.berg) {
+    wake.burst_shards(
+      collision_result.berg.mesh.position.x,
+      collision_result.berg.mesh.position.z,
+      collision_result.fatal,
+    );
+  }
+
+  wake.update(delta, elapsed, physics.x, physics.z, physics.heading, physics.speed);
+  flotsam.update(delta, elapsed, physics.x, physics.z, physics.heading, physics.speed);
 
   ship.group.position.x = physics.x;
   ship.group.position.z = physics.z;
@@ -210,13 +244,29 @@ function frame(): void {
   sky.update(elapsed);
   ocean.update(elapsed, camera, physics.x, physics.z);
   ship.update(elapsed, delta, physics.turn_heel);
+  ship.group.position.y += juice.intro_offset_y;
 
   const sink_progress = sinking.update(delta, ship.group);
   if (sinking.finished && state.phase === GamePhase.Sinking) {
     state.set_phase(GamePhase.GameOver);
   }
 
-  director.update(delta, elapsed, camera, physics, ship.group.position.y, state.phase, sink_progress);
+  director.update(raw_delta, elapsed, camera, physics, ship.group.position.y, state.phase, sink_progress);
+
+  // Juice: FOV punch, camera shake, slow-mo pulse on post and audio.
+  const target_fov = 60 + juice.fov_offset;
+  if (Math.abs(camera.fov - target_fov) > 0.01) {
+    camera.fov = target_fov;
+    camera.updateProjectionMatrix();
+  }
+  if (juice.shake_magnitude > 0) {
+    const shake = juice.shake_offset();
+    camera.position.x += shake.x;
+    camera.position.y += shake.y;
+    camera.position.z += shake.z;
+  }
+  post.set_pulse(juice.pulse);
+  audio.set_slowmo(juice.pulse);
 
   while (toast_queue.length > 0) {
     const toast = toast_queue.shift();
