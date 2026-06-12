@@ -28,7 +28,7 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 
 - [x] D3.1 Mobile/touch: telegraph slider, rudder drag, tap camera toggle, responsive HUD, auto quality-down — DONE: left telegraph step slider, right rudder drag pad with pointer capture, CAM button, 820px responsive HUD, mobile defaults to low quality + 1.5 pixel ratio cap
 - [x] D3.2 Daily Voyage: date-seeded berg field, one scored attempt/day, streaks, daily-exclusive card variants — DONE: xmur3/mulberry32 date-seeded spawner, one scored attempt + practice mode, live streak logic, First Light + Streak Keeper exclusive cards, title button + D key
-- [ ] D3.3 Records board: local top-10 per mode + NEW BEST confetti/fanfare
+- [x] D3.3 Records board: local top-10 per mode + NEW BEST confetti/fanfare — DONE: per-mode top-10 with rank detection, R-key/button overlay table, confetti layer + horn/legendary fanfare on rank-1 runs
 - [ ] D3.4 Music layer: procedural pentatonic motif scaling with ice density + rarity stings
 - [ ] D3.5 Metrics: `tir.metrics.v1` blob + `?debug=metrics` panel (runs/session, play days, collection engagement)
 - [ ] D3.6 Final QA (desktop + mobile) + push + verify live URLs -> LOOP_COMPLETE

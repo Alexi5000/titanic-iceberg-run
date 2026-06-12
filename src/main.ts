@@ -35,6 +35,8 @@ import { Onboarding } from './core/onboarding';
 import { SkinSystem } from './gameplay/skins';
 import { TouchControls, is_touch_device } from './ui/touch_controls';
 import { DailySystem, seeded_rng, today_string } from './gameplay/daily';
+import { RecordsBoard } from './gameplay/records';
+import { RecordsOverlay, celebrate_confetti } from './ui/records_ui';
 import { CARD_DEFS } from './gameplay/cards';
 
 let palette: Palette = load_palette();
@@ -194,6 +196,8 @@ function card_context(): CardContext {
 
 const daily = new DailySystem();
 let game_mode: 'endless' | 'daily' = 'endless';
+const records = new RecordsBoard();
+const records_overlay = new RecordsOverlay(document.body, records);
 
 const gallery_button = document.createElement('button');
 gallery_button.className = 'menu-button';
@@ -203,7 +207,13 @@ const daily_button = document.createElement('button');
 daily_button.className = 'menu-button';
 daily_button.style.marginLeft = '10px';
 daily_button.addEventListener('click', () => start_run('daily'));
-menus.title_extra.append(gallery_button, daily_button);
+
+const records_button = document.createElement('button');
+records_button.className = 'menu-button';
+records_button.style.marginLeft = '10px';
+records_button.textContent = 'Records  [R]';
+records_button.addEventListener('click', () => records_overlay.open());
+menus.title_extra.append(gallery_button, daily_button, records_button);
 
 function refresh_gallery_button(): void {
   gallery_button.textContent = `Cards ${collection.owned_count}/${CARD_DEFS.length}  [G]`;
@@ -286,10 +296,29 @@ state.on('phase_change', () => {
         daily_note = 'PRACTICE RUN - today\'s daily was already scored';
       }
     }
+    const rank = records.submit(game_mode, {
+      score: Math.round(state.score),
+      distance: Math.round(physics.distance_travelled),
+      near_misses: state.near_misses,
+      run_time: state.run_time,
+      cards_earned: run_new_cards.length,
+      date: new Date().toISOString(),
+    });
+
     finalize_run();
     hud.set_visible(false);
     menus.show_game_over(state, physics, rewards);
     menus.gameover_extra.replaceChildren(build_reveal_block(run_new_cards));
+
+    if (rank === 0 && state.score > 100) {
+      const best = document.createElement('div');
+      best.className = 'gameover-cards-label';
+      best.textContent = 'NEW BEST CROSSING';
+      menus.gameover_extra.prepend(best);
+      if (!juice.reduced_motion) celebrate_confetti(document.body);
+      audio.horn();
+      audio.card_sting('legendary');
+    }
     if (daily_note) {
       const note = document.createElement('div');
       note.className = 'gameover-cards-label';
@@ -344,9 +373,17 @@ function frame(): void {
       if (gallery.is_open) gallery.close();
       else gallery.open();
     }
-    if (input.was_pressed('Escape') && gallery.is_open) gallery.close();
-    if (input.was_pressed('KeyD') && !gallery.is_open) start_run('daily');
-    else if ((input.was_pressed('Enter') || click_to_start) && !gallery.is_open) start_run();
+    if (input.was_pressed('KeyR')) {
+      if (records_overlay.is_open) records_overlay.close();
+      else records_overlay.open();
+    }
+    if (input.was_pressed('Escape')) {
+      if (gallery.is_open) gallery.close();
+      if (records_overlay.is_open) records_overlay.close();
+    }
+    const overlay_open = gallery.is_open || records_overlay.is_open;
+    if (input.was_pressed('KeyD') && !overlay_open) start_run('daily');
+    else if ((input.was_pressed('Enter') || click_to_start) && !overlay_open) start_run();
   }
   click_to_start = false;
 

@@ -512,6 +512,38 @@ const CSS = `
     touch-action: none;
   }
 
+  /* ---------- Records ---------- */
+  .records-table {
+    width: min(720px, 92vw);
+    font-size: 13.5px;
+    letter-spacing: 0.4px;
+  }
+  .records-row {
+    display: grid;
+    grid-template-columns: 34px 1.1fr 1fr 1.2fr 0.6fr 1fr;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(170, 200, 230, 0.14);
+    align-items: center;
+  }
+  .records-head { color: #8fb0cc; text-transform: uppercase; font-size: 10.5px; letter-spacing: 1.4px; }
+  .records-best { color: #ecd9a0; font-weight: 700; background: rgba(200, 162, 74, 0.08); border-radius: 6px; }
+  .records-empty { opacity: 0.7; font-size: 14px; padding: 30px; text-align: center; }
+
+  .confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+  .confetti-piece {
+    position: absolute;
+    top: -3vh;
+    width: 10px;
+    height: 16px;
+    border-radius: 2px;
+    animation: confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(640deg); opacity: 0.7; }
+  }
+
   /* ---------- Responsive HUD ---------- */
   @media (max-width: 820px) {
     .hud-score { font-size: 22px; }
