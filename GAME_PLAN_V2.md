@@ -31,7 +31,9 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 - [x] D3.3 Records board: local top-10 per mode + NEW BEST confetti/fanfare — DONE: per-mode top-10 with rank detection, R-key/button overlay table, confetti layer + horn/legendary fanfare on rank-1 runs
 - [x] D3.4 Music layer: procedural pentatonic motif scaling with ice density + rarity stings — DONE: A-minor pentatonic wandering motif, beat interval + volume + upward bias scale with ice density, N-key mute persisted, rarity stings already in (D2)
 - [x] D3.5 Metrics: `tir.metrics.v1` blob + `?debug=metrics` panel (runs/session, play days, collection engagement) — DONE: sessions/runs/play-days/gallery-opens tracked with beforeunload flush, live inspector panel with median runs/session + cards owned
-- [ ] D3.6 Final QA (desktop + mobile) + push + verify live URLs -> LOOP_COMPLETE
+- [x] D3.6 Final QA (desktop + mobile) + push + verify live URLs -> LOOP_COMPLETE — DONE: automated desktop (daily/records/metrics) + iPhone-emulated (touch controls, responsive HUD) QA all pass with 0 console errors; pushed; Pages live (Vercel pending operator billing fix)
+
+LOOP_COMPLETE — v2 shipped. Live URL: https://alexi5000.github.io/titanic-iceberg-run/
 
 ## Rules
 

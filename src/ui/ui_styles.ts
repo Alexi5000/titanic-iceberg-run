@@ -561,6 +561,7 @@ const CSS = `
     .card { width: 124px; }
     .gameover-cards { gap: 8px; }
     .toasts { top: 60px; }
+    .touch-camera-button { top: auto; bottom: 230px; right: 12px; }
   }
 `;
 

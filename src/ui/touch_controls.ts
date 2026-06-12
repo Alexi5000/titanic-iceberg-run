@@ -66,7 +66,11 @@ export class TouchControls {
     this.rudder_pad.addEventListener('pointerdown', (event) => {
       event.stopPropagation();
       this.rudder_pointer_id = event.pointerId;
-      this.rudder_pad.setPointerCapture(event.pointerId);
+      try {
+        this.rudder_pad.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer already released - drag still works through pad-local events.
+      }
       this.update_rudder_from_event(event);
     });
     this.rudder_pad.addEventListener('pointermove', (event) => {
