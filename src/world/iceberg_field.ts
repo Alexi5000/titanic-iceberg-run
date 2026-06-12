@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { wave_height } from './ocean';
+import { Palette } from './palette';
 
 export interface Iceberg {
   mesh: THREE.Mesh;
@@ -61,6 +62,11 @@ export class IcebergField {
       this.group.add(mesh);
       this.bergs.push({ mesh, radius: 1, active: false, near_miss_armed: true });
     }
+  }
+
+  set_palette(palette: Palette): void {
+    this.material.color.setHex(palette.berg_color);
+    this.material.emissive.setHex(palette.berg_emissive);
   }
 
   /** Place initial scatter so the field is not empty at run start, kept well clear of the ship. */

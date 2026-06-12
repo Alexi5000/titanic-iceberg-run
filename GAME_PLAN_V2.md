@@ -8,7 +8,7 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 
 ## Drop 1 — Look and Feel ("Bruno-fication")
 
-- [ ] D1.1 Palette system: `src/world/palette.ts` config drives ocean/sky/fog/berg/ship accents; 3 moods (Dusk default, Night, Aurora); gradient sky dome shader
+- [x] D1.1 Palette system: `src/world/palette.ts` config drives ocean/sky/fog/berg/ship accents; 3 moods (Dusk default, Night, Aurora); gradient sky dome shader — DONE: palette config + persistence, gradient dome with aurora ribbons, P key cycles moods live
 - [ ] D1.2 Stylized shading: gradient-ramp lighting on ship + bergs, warm rim light, saturated ice
 - [ ] D1.3 Post-processing: EffectComposer bloom + vignette, quality toggle to disable
 - [ ] D1.4 Juice pass: screen shake on graze, near-miss hit-stop + slow-mo + FOV punch + audio sweep, wake foam trail, bow spray, ice-shard burst, springy HUD, bounce intro, reduced-motion toggle

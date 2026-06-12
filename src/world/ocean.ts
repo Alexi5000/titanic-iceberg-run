@@ -3,6 +3,7 @@
 // reference: src/main.ts, src/ship/titanic_model.ts
 
 import * as THREE from 'three';
+import { Palette } from './palette';
 
 interface WaveDef {
   amplitude: number;
@@ -96,7 +97,7 @@ export class Ocean {
   readonly mesh: THREE.Mesh;
   private readonly material: THREE.ShaderMaterial;
 
-  constructor(fog_color: THREE.Color, fog_density: number, moon_dir: THREE.Vector3) {
+  constructor(palette: Palette, moon_dir: THREE.Vector3) {
     const geometry = new THREE.PlaneGeometry(2600, 2600, 180, 180);
     geometry.rotateX(-Math.PI / 2);
 
@@ -105,13 +106,13 @@ export class Ocean {
       fragmentShader: FRAGMENT_SHADER,
       uniforms: {
         u_time: { value: 0 },
-        u_deep_color: { value: new THREE.Color(0x02101e) },
-        u_surface_color: { value: new THREE.Color(0x0c2a44) },
+        u_deep_color: { value: new THREE.Color(palette.ocean_deep) },
+        u_surface_color: { value: new THREE.Color(palette.ocean_surface) },
         u_moon_dir: { value: moon_dir.clone().normalize() },
-        u_moon_color: { value: new THREE.Color(0xbcd2e8) },
+        u_moon_color: { value: new THREE.Color(palette.moon_color) },
         u_camera_pos: { value: new THREE.Vector3() },
-        u_fog_color: { value: fog_color },
-        u_fog_density: { value: fog_density },
+        u_fog_color: { value: new THREE.Color(palette.fog_color) },
+        u_fog_density: { value: palette.fog_density_base },
       },
     });
 
@@ -121,6 +122,14 @@ export class Ocean {
 
   set_fog_density(density: number): void {
     this.material.uniforms.u_fog_density.value = density;
+  }
+
+  set_palette(palette: Palette): void {
+    (this.material.uniforms.u_deep_color.value as THREE.Color).setHex(palette.ocean_deep);
+    (this.material.uniforms.u_surface_color.value as THREE.Color).setHex(palette.ocean_surface);
+    (this.material.uniforms.u_moon_color.value as THREE.Color).setHex(palette.moon_color);
+    (this.material.uniforms.u_fog_color.value as THREE.Color).setHex(palette.fog_color);
+    this.material.uniforms.u_fog_density.value = palette.fog_density_base;
   }
 
   update(time: number, camera: THREE.Camera, follow_x: number, follow_z: number): void {

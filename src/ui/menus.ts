@@ -35,6 +35,7 @@ export class Menus {
       '<b>A / D</b> &nbsp;Rudder port / starboard',
       '<b>V</b> &nbsp;Toggle bridge / chase view',
       '<b>C</b> &nbsp;Cinematic camera',
+      '<b>P</b> &nbsp;Mood: Dusk / Night / Aurora',
       '',
       'Avoid the icebergs. She does not turn quickly.',
     ].join('<br>');

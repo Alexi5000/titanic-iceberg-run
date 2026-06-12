@@ -4,7 +4,8 @@
 
 import * as THREE from 'three';
 import { Ocean } from './world/ocean';
-import { create_sky } from './world/sky';
+import { Sky } from './world/sky';
+import { load_palette, save_palette, next_palette, Palette } from './world/palette';
 import { TitanicShip } from './ship/titanic_model';
 import { ShipPhysics } from './ship/ship_physics';
 import { InputManager } from './core/input_manager';
@@ -21,8 +22,7 @@ import { Menus } from './ui/menus';
 import { compute_difficulty } from './gameplay/difficulty';
 import { AudioManager } from './core/audio_manager';
 
-const FOG_COLOR = new THREE.Color(0x060d18);
-const FOG_DENSITY = 0.0016;
+let palette: Palette = load_palette();
 
 const container = document.getElementById('app');
 if (!container) throw new Error('missing #app container');
@@ -34,18 +34,29 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = FOG_COLOR.clone();
-scene.fog = new THREE.FogExp2(FOG_COLOR.getHex(), FOG_DENSITY);
+scene.fog = new THREE.FogExp2(palette.fog_color, palette.fog_density_base);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 8000);
 camera.position.set(120, 60, -200);
 camera.lookAt(0, 15, 0);
 
-const sky = create_sky();
+let sky = new Sky(palette);
 scene.add(sky.group);
 
-const ocean = new Ocean(FOG_COLOR, FOG_DENSITY, sky.moon_dir);
+const ocean = new Ocean(palette, sky.moon_dir);
 scene.add(ocean.mesh);
+
+function apply_palette(next: Palette): void {
+  palette = next;
+  save_palette(palette);
+  scene.remove(sky.group);
+  sky = new Sky(palette);
+  scene.add(sky.group);
+  ocean.set_palette(palette);
+  field.set_palette(palette);
+  (scene.fog as THREE.FogExp2).color.setHex(palette.fog_color);
+  (scene.fog as THREE.FogExp2).density = palette.fog_density_base;
+}
 
 const ship = new TitanicShip();
 scene.add(ship.group);
@@ -55,6 +66,7 @@ const input = new InputManager();
 
 const state = new GameState();
 const field = new IcebergField();
+field.set_palette(palette);
 scene.add(field.group);
 const collision = new CollisionSystem();
 
@@ -157,6 +169,8 @@ function frame(): void {
   }
   click_to_start = false;
 
+  if (input.was_pressed('KeyP')) apply_palette(next_palette(palette));
+
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
     state.run_time += delta;
@@ -167,7 +181,7 @@ function frame(): void {
     scoring.update(delta, state, physics);
     missions.update(delta, state, physics);
 
-    const difficulty = compute_difficulty(physics.distance_travelled);
+    const difficulty = compute_difficulty(physics.distance_travelled, palette.fog_density_base);
     field.density = difficulty.iceberg_density;
     (scene.fog as THREE.FogExp2).density = difficulty.fog_density;
     ocean.set_fog_density(difficulty.fog_density);
@@ -188,6 +202,7 @@ function frame(): void {
   ship.group.position.z = physics.z;
   ship.group.rotation.y = physics.heading;
 
+  sky.update(elapsed);
   ocean.update(elapsed, camera, physics.x, physics.z);
   ship.update(elapsed, delta, physics.turn_heel);
 
