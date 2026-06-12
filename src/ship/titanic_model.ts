@@ -86,7 +86,13 @@ class FunnelSmoke {
   }
 }
 
-function create_hull(): THREE.Group {
+interface HullParts {
+  group: THREE.Group;
+  hull_material: THREE.MeshToonMaterial;
+  band_material: THREE.MeshToonMaterial;
+}
+
+function create_hull(): HullParts {
   const hull = new THREE.Group();
   const hull_material = make_toon_material({ color: HULL_COLOR });
 
@@ -112,17 +118,15 @@ function create_hull(): THREE.Group {
   hull.add(stern);
 
   // Red-brown boot-top band near the waterline.
-  const band = new THREE.Mesh(
-    new THREE.BoxGeometry(SHIP_BEAM + 0.4, 2.2, 210),
-    make_toon_material({ color: HULL_BAND_COLOR }),
-  );
+  const band_material = make_toon_material({ color: HULL_BAND_COLOR });
+  const band = new THREE.Mesh(new THREE.BoxGeometry(SHIP_BEAM + 0.4, 2.2, 210), band_material);
   band.position.set(0, -4.4, 0);
   hull.add(band);
 
-  return hull;
+  return { group: hull, hull_material, band_material };
 }
 
-function create_superstructure(): THREE.Group {
+function create_superstructure(): { group: THREE.Group; material: THREE.MeshToonMaterial } {
   const group = new THREE.Group();
   const material = make_toon_material({ color: SUPERSTRUCTURE_COLOR });
 
@@ -138,18 +142,22 @@ function create_superstructure(): THREE.Group {
   bridge.position.set(0, 29.5, 58);
   group.add(bridge);
 
-  return group;
+  return { group, material };
 }
 
-function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[]; funnel_material: THREE.MeshToonMaterial } {
+function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[]; funnel_materials: THREE.MeshToonMaterial[] } {
   const group = new THREE.Group();
-  const funnel_material = make_toon_material({ color: FUNNEL_COLOR });
   const top_material = make_toon_material({ color: FUNNEL_TOP_COLOR });
   const smoke_origins: THREE.Vector3[] = [];
+  const funnel_materials: THREE.MeshToonMaterial[] = [];
 
   const funnel_z = [52, 17, -18, -53];
   for (let i = 0; i < 4; i++) {
     const funnel = new THREE.Group();
+
+    // Separate material per funnel so skins can color them individually.
+    const funnel_material = make_toon_material({ color: FUNNEL_COLOR });
+    funnel_materials.push(funnel_material);
 
     const body = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 5.2, 24, 14), funnel_material);
     body.position.y = 12;
@@ -167,7 +175,7 @@ function create_funnels(): { group: THREE.Group; smoke_origins: THREE.Vector3[];
     if (i < 3) smoke_origins.push(new THREE.Vector3(0, 54, funnel_z[i] - 4));
   }
 
-  return { group, smoke_origins, funnel_material };
+  return { group, smoke_origins, funnel_materials };
 }
 
 function create_masts(): THREE.Group {
@@ -222,18 +230,27 @@ export class TitanicShip {
   readonly group: THREE.Group;
   private readonly smoke_systems: FunnelSmoke[] = [];
   private readonly inner: THREE.Group;
-  private readonly funnel_material: THREE.MeshToonMaterial;
+  private readonly hull_material: THREE.MeshToonMaterial;
+  private readonly band_material: THREE.MeshToonMaterial;
+  private readonly superstructure_material: THREE.MeshToonMaterial;
+  private readonly funnel_materials: THREE.MeshToonMaterial[];
   private searchlight: THREE.SpotLight | null = null;
 
   constructor() {
     this.group = new THREE.Group();
     this.inner = new THREE.Group();
 
-    this.inner.add(create_hull());
-    this.inner.add(create_superstructure());
+    const hull = create_hull();
+    this.hull_material = hull.hull_material;
+    this.band_material = hull.band_material;
+    this.inner.add(hull.group);
 
-    const { group: funnels, smoke_origins, funnel_material } = create_funnels();
-    this.funnel_material = funnel_material;
+    const superstructure = create_superstructure();
+    this.superstructure_material = superstructure.material;
+    this.inner.add(superstructure.group);
+
+    const { group: funnels, smoke_origins, funnel_materials } = create_funnels();
+    this.funnel_materials = funnel_materials;
     this.inner.add(funnels);
 
     for (const origin of smoke_origins) {
@@ -261,10 +278,52 @@ export class TitanicShip {
     if (this.searchlight) this.searchlight.visible = enabled;
   }
 
-  /** Cosmetic unlock: gilded funnels. */
-  set_golden_funnels(enabled: boolean): void {
-    this.funnel_material.color.setHex(enabled ? 0xd4a747 : FUNNEL_COLOR);
-    this.funnel_material.emissive.setHex(enabled ? 0x4a3408 : 0x000000);
+  /**
+   * Apply a cosmetic skin. Pass null for the classic livery; golden_funnels only
+   * shows on the classic livery (skins define their own funnel treatment).
+   */
+  apply_skin(skin_id: string | null, golden_funnels: boolean): void {
+    const all = [this.hull_material, this.band_material, this.superstructure_material, ...this.funnel_materials];
+    for (const material of all) {
+      material.transparent = false;
+      material.opacity = 1;
+      material.emissive.setHex(0x000000);
+      material.needsUpdate = true;
+    }
+    this.hull_material.color.setHex(HULL_COLOR);
+    this.band_material.color.setHex(HULL_BAND_COLOR);
+    this.superstructure_material.color.setHex(SUPERSTRUCTURE_COLOR);
+    for (const funnel of this.funnel_materials) funnel.color.setHex(FUNNEL_COLOR);
+
+    if (skin_id === 'royal_mail') {
+      this.hull_material.color.setHex(0x9e2b25);
+      this.band_material.color.setHex(0xe8dcc0);
+    } else if (skin_id === 'brass_teak') {
+      this.hull_material.color.setHex(0x2c2118);
+      this.superstructure_material.color.setHex(0xc8a878);
+      for (const funnel of this.funnel_materials) {
+        funnel.color.setHex(0xd9b25f);
+        funnel.emissive.setHex(0x33240a);
+      }
+    } else if (skin_id === 'ghost') {
+      for (const material of all) {
+        material.color.setHex(0xdfe9f2);
+        material.emissive.setHex(0x3a5a72);
+        material.transparent = true;
+        material.opacity = 0.55;
+      }
+    } else if (skin_id === 'rainbow') {
+      const rainbow = [0xe2574c, 0xe9b44c, 0x5ec98a, 0x5a8fd9];
+      this.funnel_materials.forEach((funnel, i) => {
+        funnel.color.setHex(rainbow[i]);
+        funnel.emissive.setHex(0x111111);
+      });
+    } else if (golden_funnels) {
+      for (const funnel of this.funnel_materials) {
+        funnel.color.setHex(0xd4a747);
+        funnel.emissive.setHex(0x4a3408);
+      }
+    }
   }
 
   /** Bob and pitch the ship on the CPU wave mirror. Position/heading are owned by ship physics. */

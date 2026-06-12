@@ -21,7 +21,7 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 - [x] D2.2 Card art: procedural render-to-texture vignettes per suit + rarity border treatments (flat/foil/aurora/holo) — DONE: freeze-frame canvas capture for Moments/Ships, 2D-canvas medallion emblems for Feats, CSS foil/aurora/holo borders
 - [x] D2.3 Card UI: earn toasts (Legendary freeze-frame), game-over flip reveal with stings, gallery (tabs, silhouettes + hints, collection %, inspect with tilt) — DONE: rarity stings, staggered flip reveals on game over, G-key gallery with tabs/silhouettes/parallax inspect
 - [x] D2.4 Onboarding: first-run guided intro, contextual prompts dismissing on use, forgiving first berg, guaranteed first card, skippable — DONE: 3-step prompts (telegraph/steer/near-miss), 0.45 density cap during tutorial, first near miss celebrated + grants Close Shave card, X skips, never repeats
-- [ ] D2.5 Card-gated cosmetics: 4 ship skins via card-set completion + equip screen; grandfather v1 unlocks
+- [x] D2.5 Card-gated cosmetics: 4 ship skins via card-set completion + equip screen; grandfather v1 unlocks — DONE: Royal Mail Red / Brass & Teak / Ghost / Rainbow gated by suit completion, Skins tab in gallery with equip, golden funnels + searchlight preserved on classic livery
 - [ ] D2.6 Drop 2 QA + push + verify deploys
 
 ## Drop 3 — Audience expanders

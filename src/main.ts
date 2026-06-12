@@ -31,6 +31,7 @@ import { CardGallery, build_reveal_block } from './ui/card_ui';
 import { card_art_for } from './ui/card_art';
 import { CameraMode } from './camera/camera_director';
 import { Onboarding } from './core/onboarding';
+import { SkinSystem } from './gameplay/skins';
 
 let palette: Palette = load_palette();
 
@@ -119,9 +120,11 @@ missions.attach(state);
 
 const scoring = new Scoring(state);
 
+let skins: SkinSystem | undefined;
+
 function apply_unlocks(): void {
   ship.set_searchlight(rewards.is_unlocked('searchlight'));
-  ship.set_golden_funnels(rewards.is_unlocked('golden_funnels'));
+  ship.apply_skin(skins ? skins.equipped : null, rewards.is_unlocked('golden_funnels'));
 }
 apply_unlocks();
 
@@ -141,7 +144,10 @@ const audio = new AudioManager();
 
 // ---------- Collectible cards ----------
 const collection = new CardCollection();
-const gallery = new CardGallery(document.body, collection);
+skins = new SkinSystem(collection);
+const gallery = new CardGallery(document.body, collection, skins);
+gallery.on_skin_change = apply_unlocks;
+apply_unlocks();
 let run_new_cards: { def: CardDef; earned: EarnedCard }[] = [];
 let current_fog_density = palette.fog_density_base;
 
