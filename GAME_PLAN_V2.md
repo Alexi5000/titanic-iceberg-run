@@ -30,7 +30,7 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 - [x] D3.2 Daily Voyage: date-seeded berg field, one scored attempt/day, streaks, daily-exclusive card variants — DONE: xmur3/mulberry32 date-seeded spawner, one scored attempt + practice mode, live streak logic, First Light + Streak Keeper exclusive cards, title button + D key
 - [x] D3.3 Records board: local top-10 per mode + NEW BEST confetti/fanfare — DONE: per-mode top-10 with rank detection, R-key/button overlay table, confetti layer + horn/legendary fanfare on rank-1 runs
 - [x] D3.4 Music layer: procedural pentatonic motif scaling with ice density + rarity stings — DONE: A-minor pentatonic wandering motif, beat interval + volume + upward bias scale with ice density, N-key mute persisted, rarity stings already in (D2)
-- [ ] D3.5 Metrics: `tir.metrics.v1` blob + `?debug=metrics` panel (runs/session, play days, collection engagement)
+- [x] D3.5 Metrics: `tir.metrics.v1` blob + `?debug=metrics` panel (runs/session, play days, collection engagement) — DONE: sessions/runs/play-days/gallery-opens tracked with beforeunload flush, live inspector panel with median runs/session + cards owned
 - [ ] D3.6 Final QA (desktop + mobile) + push + verify live URLs -> LOOP_COMPLETE
 
 ## Rules

@@ -37,6 +37,7 @@ import { TouchControls, is_touch_device } from './ui/touch_controls';
 import { DailySystem, seeded_rng, today_string } from './gameplay/daily';
 import { RecordsBoard } from './gameplay/records';
 import { RecordsOverlay, celebrate_confetti } from './ui/records_ui';
+import { Metrics } from './core/metrics';
 import { CARD_DEFS } from './gameplay/cards';
 
 let palette: Palette = load_palette();
@@ -199,10 +200,19 @@ const daily = new DailySystem();
 let game_mode: 'endless' | 'daily' = 'endless';
 const records = new RecordsBoard();
 const records_overlay = new RecordsOverlay(document.body, records);
+const metrics = new Metrics();
+metrics.maybe_show_debug_panel(() => ({
+  cards_owned: collection.owned_count,
+  career_runs: collection.career_runs,
+  daily_streak: daily.streak,
+}));
 
 const gallery_button = document.createElement('button');
 gallery_button.className = 'menu-button';
-gallery_button.addEventListener('click', () => gallery.open());
+gallery_button.addEventListener('click', () => {
+  gallery.open();
+  metrics.record_gallery_open();
+});
 
 const daily_button = document.createElement('button');
 daily_button.className = 'menu-button';
@@ -240,6 +250,7 @@ touch.bind(
 
 function start_run(mode: 'endless' | 'daily' = 'endless'): void {
   game_mode = mode;
+  metrics.record_run();
   audio.init();
   audio.horn();
   physics.reset();
@@ -371,8 +382,12 @@ function frame(): void {
 
   if (state.phase === GamePhase.Title || state.phase === GamePhase.GameOver) {
     if (input.was_pressed('KeyG')) {
-      if (gallery.is_open) gallery.close();
-      else gallery.open();
+      if (gallery.is_open) {
+        gallery.close();
+      } else {
+        gallery.open();
+        metrics.record_gallery_open();
+      }
     }
     if (input.was_pressed('KeyR')) {
       if (records_overlay.is_open) records_overlay.close();
