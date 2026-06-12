@@ -13,6 +13,10 @@ export class Menus {
   private readonly gameover_screen: HTMLDivElement;
   private readonly title_career: HTMLDivElement;
   private readonly gameover_stats: HTMLDivElement;
+  /** Container for card reveals injected by the card UI below the game-over stats. */
+  readonly gameover_extra: HTMLDivElement;
+  /** Container under the title career line for gallery/equip buttons. */
+  readonly title_extra: HTMLDivElement;
 
   constructor(parent: HTMLElement) {
     inject_ui_styles();
@@ -45,11 +49,13 @@ export class Menus {
     this.title_career = document.createElement('div');
     this.title_career.className = 'career-line';
 
+    this.title_extra = document.createElement('div');
+
     const press = document.createElement('div');
     press.className = 'press-start';
     press.textContent = 'PRESS ENTER TO SET SAIL';
 
-    this.title_screen.append(title, subtitle, controls, this.title_career, press);
+    this.title_screen.append(title, subtitle, controls, this.title_career, this.title_extra, press);
     parent.appendChild(this.title_screen);
 
     // Game over screen.
@@ -63,11 +69,13 @@ export class Menus {
     this.gameover_stats = document.createElement('div');
     this.gameover_stats.className = 'stats-card';
 
+    this.gameover_extra = document.createElement('div');
+
     const go_press = document.createElement('div');
     go_press.className = 'press-start';
     go_press.textContent = 'PRESS ENTER FOR ANOTHER CROSSING';
 
-    this.gameover_screen.append(go_title, this.gameover_stats, go_press);
+    this.gameover_screen.append(go_title, this.gameover_stats, this.gameover_extra, go_press);
     parent.appendChild(this.gameover_screen);
   }
 

@@ -22,6 +22,8 @@ export interface CollisionResult {
 
 export class CollisionSystem {
   private cooldown = 0;
+  /** Radius of the berg involved in the most recent near miss (for card triggers). */
+  last_near_miss_radius = 0;
 
   update(
     delta: number,
@@ -96,6 +98,7 @@ export class CollisionSystem {
         const along = center_dx * fwd_x + center_dz * fwd_z;
         if (along < 0) {
           berg.near_miss_armed = false;
+          this.last_near_miss_radius = berg.radius;
           state.register_near_miss();
         }
       }

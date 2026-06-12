@@ -7,7 +7,7 @@ import { Ocean } from './world/ocean';
 import { Sky } from './world/sky';
 import { load_palette, save_palette, next_palette, Palette } from './world/palette';
 import { TitanicShip } from './ship/titanic_model';
-import { ShipPhysics } from './ship/ship_physics';
+import { ShipPhysics, TelegraphOrder } from './ship/ship_physics';
 import { InputManager } from './core/input_manager';
 import { GameState, GamePhase } from './core/game_state';
 import { IcebergField } from './world/iceberg_field';
@@ -25,13 +25,22 @@ import { PostProcessing } from './core/post_processing';
 import { JuiceSystem } from './gameplay/juice';
 import { WakeEffects } from './ship/wake_effects';
 import { Flotsam } from './world/flotsam';
+import { CardDetector, CardDef, CardContext } from './gameplay/cards';
+import { CardCollection, EarnedCard } from './gameplay/card_collection';
+import { CardGallery, build_reveal_block } from './ui/card_ui';
+import { card_art_for } from './ui/card_art';
+import { CameraMode } from './camera/camera_director';
 
 let palette: Palette = load_palette();
 
 const container = document.getElementById('app');
 if (!container) throw new Error('missing #app container');
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: 'high-performance',
+  preserveDrawingBuffer: true, // needed for freeze-frame card art capture
+});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -100,7 +109,11 @@ const missions = new MissionTracker((mission) => {
   state.score += mission.reward_points;
   rewards.add_points(mission.reward_points);
   audio.chime();
+  on_mission_complete_for_cards();
 }, rewards.career_near_misses);
+
+/** Indirection because the card detector is constructed after the mission tracker. */
+let on_mission_complete_for_cards: () => void = () => undefined;
 missions.attach(state);
 
 const scoring = new Scoring(state);
@@ -125,6 +138,61 @@ const hud = new Hud(document.body, state);
 const menus = new Menus(document.body);
 const audio = new AudioManager();
 
+// ---------- Collectible cards ----------
+const collection = new CardCollection();
+const gallery = new CardGallery(document.body, collection);
+let run_new_cards: { def: CardDef; earned: EarnedCard }[] = [];
+let current_fog_density = palette.fog_density_base;
+
+const detector = new CardDetector(
+  (def) => {
+    const art = card_art_for(def, renderer.domElement);
+    const earned = collection.add(def, physics.distance_travelled, state.score, art);
+    if (!earned) return;
+    run_new_cards.push({ def, earned });
+    toast_queue.push({ title: `CARD EARNED: ${def.title}`, body: def.flavor });
+    audio.card_sting(def.rarity);
+    if (def.rarity === 'legendary') juice.trigger_near_miss();
+  },
+  (id) => collection.is_owned(id),
+);
+
+function card_context(): CardContext {
+  return {
+    run_time: state.run_time,
+    distance: physics.distance_travelled,
+    hull: state.hull,
+    speed: physics.speed,
+    rudder: physics.rudder,
+    telegraph_is_full_ahead: physics.telegraph === TelegraphOrder.FullAhead,
+    near_misses_run: state.near_misses,
+    grazes_run: state.grazes,
+    palette_id: palette.id,
+    fog_density: current_fog_density,
+    base_fog_density: palette.fog_density_base,
+    bridge_cam_active: director.mode === CameraMode.Bridge,
+    searchlight_unlocked: rewards.is_unlocked('searchlight'),
+    golden_funnels_unlocked: rewards.is_unlocked('golden_funnels'),
+    missions_complete_run: missions.missions.filter((m) => m.complete).length,
+    career_runs: collection.career_runs,
+    career_distance: collection.career_distance,
+    career_near_misses: missions.get_near_miss_career_total(),
+    cards_owned: collection.owned_count,
+  };
+}
+
+const gallery_button = document.createElement('button');
+gallery_button.className = 'menu-button';
+gallery_button.addEventListener('click', () => gallery.open());
+menus.title_extra.appendChild(gallery_button);
+
+function refresh_gallery_button(): void {
+  gallery_button.textContent = `Cards ${collection.owned_count}/24  [G]`;
+}
+refresh_gallery_button();
+
+on_mission_complete_for_cards = () => detector.on_mission_complete(card_context());
+
 function start_run(): void {
   audio.init();
   audio.horn();
@@ -137,6 +205,10 @@ function start_run(): void {
   sinking.reset(ship.group);
   field.seed_initial(physics.x, physics.z, physics.heading);
   flotsam.scatter(physics.x, physics.z);
+  detector.reset_run();
+  run_new_cards = [];
+  menus.gameover_extra.replaceChildren();
+  gallery.close();
   run_finalized = false;
   menus.hide_all();
   hud.set_visible(true);
@@ -146,8 +218,12 @@ function start_run(): void {
 state.on('graze', () => {
   audio.collision_crunch(false);
   juice.trigger_graze();
+  detector.on_graze(card_context());
 });
-state.on('near_miss', () => juice.trigger_near_miss());
+state.on('near_miss', () => {
+  juice.trigger_near_miss();
+  detector.on_near_miss(card_context(), collision.last_near_miss_radius);
+});
 state.on('fatal', () => {
   sinking.begin();
   audio.collision_crunch(true);
@@ -156,9 +232,13 @@ state.on('fatal', () => {
 });
 state.on('phase_change', () => {
   if (state.phase === GamePhase.GameOver) {
+    detector.on_run_end(card_context());
+    collection.record_run(physics.distance_travelled);
     finalize_run();
     hud.set_visible(false);
     menus.show_game_over(state, physics, rewards);
+    menus.gameover_extra.replaceChildren(build_reveal_block(run_new_cards));
+    refresh_gallery_button();
   }
 });
 
@@ -192,7 +272,12 @@ function frame(): void {
   elapsed += delta;
 
   if (state.phase === GamePhase.Title || state.phase === GamePhase.GameOver) {
-    if (input.was_pressed('Enter') || click_to_start) start_run();
+    if (input.was_pressed('KeyG')) {
+      if (gallery.is_open) gallery.close();
+      else gallery.open();
+    }
+    if (input.was_pressed('Escape') && gallery.is_open) gallery.close();
+    if ((input.was_pressed('Enter') || click_to_start) && !gallery.is_open) start_run();
   }
   click_to_start = false;
 
@@ -209,9 +294,11 @@ function frame(): void {
 
     scoring.update(delta, state, physics);
     missions.update(delta, state, physics);
+    detector.update(delta, card_context());
 
     const difficulty = compute_difficulty(physics.distance_travelled, palette.fog_density_base);
     field.density = difficulty.iceberg_density;
+    current_fog_density = difficulty.fog_density;
     (scene.fog as THREE.FogExp2).density = difficulty.fog_density;
     ocean.set_fog_density(difficulty.fog_density);
   }

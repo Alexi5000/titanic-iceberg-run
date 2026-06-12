@@ -134,6 +134,36 @@ export class AudioManager {
     source.stop(now + 1.2);
   }
 
+  /** Card-earn sting whose richness scales with rarity. */
+  card_sting(rarity: 'common' | 'uncommon' | 'rare' | 'legendary'): void {
+    if (!this.ctx || !this.master) return;
+    const now = this.ctx.currentTime;
+    const note_sets: Record<string, number[]> = {
+      common: [523],
+      uncommon: [523, 659],
+      rare: [523, 659, 784],
+      legendary: [523, 659, 784, 1047, 1319],
+    };
+    const notes = note_sets[rarity];
+    notes.forEach((freq, i) => {
+      if (!this.ctx || !this.master) return;
+      const osc = this.ctx.createOscillator();
+      osc.type = rarity === 'legendary' ? 'sawtooth' : 'sine';
+      osc.frequency.value = freq;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 2400;
+      const gain = this.ctx.createGain();
+      const start = now + i * 0.11;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(rarity === 'legendary' ? 0.13 : 0.1, start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.8);
+      osc.connect(filter).connect(gain).connect(this.master);
+      osc.start(start);
+      osc.stop(start + 0.85);
+    });
+  }
+
   chime(): void {
     if (!this.ctx || !this.master) return;
     const now = this.ctx.currentTime;
