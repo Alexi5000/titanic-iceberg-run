@@ -32,6 +32,7 @@ import { card_art_for } from './ui/card_art';
 import { CameraMode } from './camera/camera_director';
 import { Onboarding } from './core/onboarding';
 import { SkinSystem } from './gameplay/skins';
+import { TouchControls, is_touch_device } from './ui/touch_controls';
 
 let palette: Palette = load_palette();
 
@@ -202,6 +203,15 @@ on_mission_complete_for_cards = () => detector.on_mission_complete(card_context(
 
 const onboarding = new Onboarding(document.body);
 
+// ---------- Touch controls + auto quality-down ----------
+const touch_active = is_touch_device();
+const touch = new TouchControls(document.body);
+touch.bind(
+  (order) => physics.set_telegraph(order),
+  () => director.cycle_gameplay_view(),
+);
+
+
 function start_run(): void {
   audio.init();
   audio.horn();
@@ -222,6 +232,10 @@ function start_run(): void {
   menus.hide_all();
   hud.set_visible(true);
   state.set_phase(GamePhase.Playing);
+  if (touch_active) {
+    touch.set_visible(true);
+    touch.sync_telegraph(physics.telegraph);
+  }
   if (Onboarding.needed()) onboarding.begin();
 }
 
@@ -259,6 +273,16 @@ field.seed_initial(physics.x, physics.z, physics.heading);
 juice.begin_intro();
 
 const post = new PostProcessing(renderer, scene, camera);
+
+if (touch_active) {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  try {
+    // Default mobile to low quality unless the player explicitly chose otherwise.
+    if (localStorage.getItem('tir.quality.v1') === null) post.set_quality(false);
+  } catch {
+    post.set_quality(false);
+  }
+}
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -298,6 +322,8 @@ function frame(): void {
 
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
+    physics.touch_rudder = touch_active ? touch.rudder_value : null;
+    if (touch_active) touch.sync_telegraph(physics.telegraph);
     state.run_time += delta;
 
     if (input.was_pressed('KeyV')) director.cycle_gameplay_view();
@@ -350,6 +376,7 @@ function frame(): void {
   const sink_progress = sinking.update(delta, ship.group);
   if (sinking.finished && state.phase === GamePhase.Sinking) {
     state.set_phase(GamePhase.GameOver);
+    touch.set_visible(false);
   }
 
   director.update(raw_delta, elapsed, camera, physics, ship.group.position.y, state.phase, sink_progress);

@@ -22,11 +22,11 @@ Vercel + GitHub Pages). When all tasks are checked AND live URLs verified: LOOP_
 - [x] D2.3 Card UI: earn toasts (Legendary freeze-frame), game-over flip reveal with stings, gallery (tabs, silhouettes + hints, collection %, inspect with tilt) — DONE: rarity stings, staggered flip reveals on game over, G-key gallery with tabs/silhouettes/parallax inspect
 - [x] D2.4 Onboarding: first-run guided intro, contextual prompts dismissing on use, forgiving first berg, guaranteed first card, skippable — DONE: 3-step prompts (telegraph/steer/near-miss), 0.45 density cap during tutorial, first near miss celebrated + grants Close Shave card, X skips, never repeats
 - [x] D2.5 Card-gated cosmetics: 4 ship skins via card-set completion + equip screen; grandfather v1 unlocks — DONE: Royal Mail Red / Brass & Teak / Ghost / Rainbow gated by suit completion, Skins tab in gallery with equip, golden funnels + searchlight preserved on classic livery
-- [x] D2.6 Drop 2 QA + push + verify deploys — DONE: automated Playwright QA (15/15 pass, 0 console errors): gallery, onboarding steps, skip, card earn + freeze-frame art, reveal, inspect, persistence; pushed
+- [x] D2.6 Drop 2 QA + push + verify deploys — DONE: automated Playwright QA (15/15 pass, 0 console errors); pushed; Pages live + verified. BLOCKER NOTE: Vercel team has overdue balance (402 DEPLOYMENT_DISABLED) - operator must update billing; git integration will auto-catch-up
 
 ## Drop 3 — Audience expanders
 
-- [ ] D3.1 Mobile/touch: telegraph slider, rudder drag, tap camera toggle, responsive HUD, auto quality-down
+- [x] D3.1 Mobile/touch: telegraph slider, rudder drag, tap camera toggle, responsive HUD, auto quality-down — DONE: left telegraph step slider, right rudder drag pad with pointer capture, CAM button, 820px responsive HUD, mobile defaults to low quality + 1.5 pixel ratio cap
 - [ ] D3.2 Daily Voyage: date-seeded berg field, one scored attempt/day, streaks, daily-exclusive card variants
 - [ ] D3.3 Records board: local top-10 per mode + NEW BEST confetti/fanfare
 - [ ] D3.4 Music layer: procedural pentatonic motif scaling with ice density + rarity stings

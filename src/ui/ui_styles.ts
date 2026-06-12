@@ -433,6 +433,103 @@ const CSS = `
   .onboarding-prompt.hidden { display: none; }
   .onboarding-prompt.pulse-once { animation: prompt-pop 0.5s cubic-bezier(0.2, 1.8, 0.4, 1); }
   @keyframes prompt-pop { 0% { transform: translateX(-50%) scale(0.7); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+
+  /* ---------- Touch controls ---------- */
+  .touch-controls { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
+  .touch-controls.hidden { display: none; }
+  .touch-telegraph {
+    position: absolute;
+    left: 12px;
+    bottom: 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: auto;
+  }
+  .touch-telegraph-step {
+    width: 74px;
+    height: 40px;
+    background: rgba(8, 16, 28, 0.78);
+    border: 1px solid rgba(170, 200, 230, 0.4);
+    border-radius: 8px;
+    color: #cfe0f0;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    touch-action: none;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .touch-telegraph-step.active { background: #c8a24a; color: #14202e; border-color: #ecd9a0; }
+  .touch-rudder-pad {
+    position: absolute;
+    right: 12px;
+    bottom: 90px;
+    width: 220px;
+    height: 110px;
+    pointer-events: auto;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .touch-rudder-track {
+    width: 100%;
+    height: 26px;
+    background: rgba(8, 16, 28, 0.78);
+    border: 1px solid rgba(170, 200, 230, 0.4);
+    border-radius: 13px;
+    position: relative;
+  }
+  .touch-rudder-handle {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    width: 42px;
+    height: 42px;
+    background: #8fd0ff;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+  .touch-camera-button {
+    position: absolute;
+    right: 18px;
+    top: 70px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(8, 16, 28, 0.78);
+    border: 1px solid rgba(170, 200, 230, 0.45);
+    color: #cfe0f0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  /* ---------- Responsive HUD ---------- */
+  @media (max-width: 820px) {
+    .hud-score { font-size: 22px; }
+    .hud-sub { font-size: 11px; }
+    .bar-shell, .rudder-shell { width: 150px; }
+    .hud-top-right, .hud-bottom-right { width: 170px; }
+    .missions { min-width: 0; padding: 7px 9px; }
+    .mission-row { font-size: 10.5px; margin: 3px 0; }
+    .game-title { font-size: 38px; letter-spacing: 6px; }
+    .game-subtitle { font-size: 13px; letter-spacing: 3px; margin-bottom: 16px; }
+    .controls-card { font-size: 11.5px; line-height: 1.8; padding: 10px 16px; max-width: 86vw; }
+    .stats-card { font-size: 13px; padding: 12px 22px; line-height: 1.9; }
+    .gameover-title { font-size: 30px; letter-spacing: 4px; }
+    .onboarding-prompt { font-size: 13px; bottom: 210px; padding: 10px 16px; }
+    .card { width: 124px; }
+    .gameover-cards { gap: 8px; }
+    .toasts { top: 60px; }
+  }
 `;
 
 let injected = false;

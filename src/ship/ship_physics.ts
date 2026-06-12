@@ -49,9 +49,15 @@ export class ShipPhysics {
   distance_travelled = 0;
   /** Visual heel induced by turning, consumed by the ship model. */
   turn_heel = 0;
+  /** Touch rudder override -1..1 (null = keyboard control). */
+  touch_rudder: number | null = null;
 
   telegraph_up(): void {
     if (this.telegraph < TelegraphOrder.FullAhead) this.telegraph += 1;
+  }
+
+  set_telegraph(order: TelegraphOrder): void {
+    this.telegraph = order;
   }
 
   telegraph_down(): void {
@@ -77,7 +83,12 @@ export class ShipPhysics {
     else if (this.speed > target) this.speed = Math.max(this.speed - rate * delta, target);
 
     // Rudder: deflect with input, self-center without.
-    if (this.steer_input !== 0) {
+    if (this.touch_rudder !== null) {
+      const target = this.touch_rudder * MAX_RUDDER_ANGLE;
+      const diff = target - this.rudder;
+      const step = RUDDER_RATE * 2.4 * delta;
+      this.rudder += Math.abs(diff) <= step ? diff : Math.sign(diff) * step;
+    } else if (this.steer_input !== 0) {
       this.rudder += this.steer_input * RUDDER_RATE * delta;
       this.rudder = Math.max(-MAX_RUDDER_ANGLE, Math.min(MAX_RUDDER_ANGLE, this.rudder));
     } else if (this.rudder !== 0) {
@@ -115,5 +126,6 @@ export class ShipPhysics {
     this.distance_travelled = 0;
     this.turn_heel = 0;
     this.steer_input = 0;
+    this.touch_rudder = null;
   }
 }
