@@ -134,6 +134,73 @@ export class AudioManager {
     source.stop(now + 1.2);
   }
 
+  // ---------- Procedural music layer ----------
+  private music_enabled = true;
+  private music_timer = 0;
+  private music_intensity = 0;
+  private last_note_index = 2;
+
+  /** A-minor pentatonic, low to high. */
+  private static readonly SCALE = [220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25];
+
+  load_music_pref(): void {
+    try {
+      this.music_enabled = localStorage.getItem('tir.music.v1') !== 'off';
+    } catch {
+      this.music_enabled = true;
+    }
+  }
+
+  toggle_music(): boolean {
+    this.music_enabled = !this.music_enabled;
+    try {
+      localStorage.setItem('tir.music.v1', this.music_enabled ? 'on' : 'off');
+    } catch {
+      // No persistence available.
+    }
+    return this.music_enabled;
+  }
+
+  /** Drives the ambient motif; intensity 0..1 follows the ice-field difficulty. */
+  update_music(delta: number, intensity: number): void {
+    if (!this.ctx || !this.master || !this.music_enabled) return;
+    this.music_intensity += (intensity - this.music_intensity) * Math.min(delta * 0.5, 1);
+
+    this.music_timer -= delta;
+    if (this.music_timer > 0) return;
+
+    // Beat interval tightens as the ice closes in.
+    this.music_timer = 2.2 - this.music_intensity * 1.3 + Math.random() * 0.4;
+
+    // Wander the scale, biased upward under pressure.
+    const bias = Math.random() < 0.3 + this.music_intensity * 0.35 ? 1 : -1;
+    this.last_note_index = Math.max(0, Math.min(AudioManager.SCALE.length - 1, this.last_note_index + bias * (Math.random() < 0.7 ? 1 : 2)));
+    const freq = AudioManager.SCALE[this.last_note_index];
+
+    const now = this.ctx.currentTime;
+    const volume = 0.025 + this.music_intensity * 0.05;
+
+    const play_tone = (frequency: number, gain_scale: number, duration: number) => {
+      if (!this.ctx || !this.master) return;
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = frequency;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(volume * gain_scale, now + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain).connect(this.master);
+      osc.start(now);
+      osc.stop(now + duration + 0.05);
+    };
+
+    play_tone(freq, 1, 2.4);
+    // Soft fifth below for body, more present at high intensity.
+    if (Math.random() < 0.45 + this.music_intensity * 0.3) {
+      play_tone(freq * 0.667, 0.55 + this.music_intensity * 0.3, 2.8);
+    }
+  }
+
   /** Card-earn sting whose richness scales with rarity. */
   card_sting(rarity: 'common' | 'uncommon' | 'rare' | 'legendary'): void {
     if (!this.ctx || !this.master) return;

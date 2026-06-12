@@ -147,6 +147,7 @@ function finalize_run(): void {
 const hud = new Hud(document.body, state);
 const menus = new Menus(document.body);
 const audio = new AudioManager();
+audio.load_music_pref();
 
 // ---------- Collectible cards ----------
 const collection = new CardCollection();
@@ -390,6 +391,7 @@ function frame(): void {
   if (input.was_pressed('KeyP')) apply_palette(next_palette(palette));
   if (input.was_pressed('KeyQ')) post.toggle();
   if (input.was_pressed('KeyM')) juice.toggle_reduced_motion();
+  if (input.was_pressed('KeyN')) audio.toggle_music();
 
   if (state.phase === GamePhase.Playing) {
     physics.read_input(input);
@@ -415,6 +417,10 @@ function frame(): void {
   }
 
   audio.update_engine(physics.speed);
+  audio.update_music(
+    raw_delta,
+    state.phase === GamePhase.Playing ? Math.min(field.density / 3.2, 1) : 0.12,
+  );
 
   if (state.phase === GamePhase.Sinking) {
     // Engines are gone - she drifts to a stop while going down.
