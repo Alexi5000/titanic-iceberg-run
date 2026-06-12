@@ -412,6 +412,27 @@ const CSS = `
     margin-top: 18px;
   }
   .menu-button:hover { background: rgba(200, 162, 74, 0.25); }
+
+  .onboarding-prompt {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(8, 16, 28, 0.88);
+    border: 1px solid rgba(200, 162, 74, 0.7);
+    border-radius: 10px;
+    padding: 14px 30px;
+    color: #f0e6cc;
+    font-size: 16.5px;
+    letter-spacing: 1px;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    z-index: 30;
+    text-align: center;
+    max-width: 84vw;
+  }
+  .onboarding-prompt.hidden { display: none; }
+  .onboarding-prompt.pulse-once { animation: prompt-pop 0.5s cubic-bezier(0.2, 1.8, 0.4, 1); }
+  @keyframes prompt-pop { 0% { transform: translateX(-50%) scale(0.7); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
 `;
 
 let injected = false;

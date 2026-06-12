@@ -30,6 +30,7 @@ import { CardCollection, EarnedCard } from './gameplay/card_collection';
 import { CardGallery, build_reveal_block } from './ui/card_ui';
 import { card_art_for } from './ui/card_art';
 import { CameraMode } from './camera/camera_director';
+import { Onboarding } from './core/onboarding';
 
 let palette: Palette = load_palette();
 
@@ -193,6 +194,8 @@ refresh_gallery_button();
 
 on_mission_complete_for_cards = () => detector.on_mission_complete(card_context());
 
+const onboarding = new Onboarding(document.body);
+
 function start_run(): void {
   audio.init();
   audio.horn();
@@ -213,6 +216,7 @@ function start_run(): void {
   menus.hide_all();
   hud.set_visible(true);
   state.set_phase(GamePhase.Playing);
+  if (Onboarding.needed()) onboarding.begin();
 }
 
 state.on('graze', () => {
@@ -223,6 +227,7 @@ state.on('graze', () => {
 state.on('near_miss', () => {
   juice.trigger_near_miss();
   detector.on_near_miss(card_context(), collision.last_near_miss_radius);
+  onboarding.on_near_miss();
 });
 state.on('fatal', () => {
   sinking.begin();
@@ -296,8 +301,11 @@ function frame(): void {
     missions.update(delta, state, physics);
     detector.update(delta, card_context());
 
+    onboarding.update(delta, physics, state, input.was_pressed('KeyX'));
+
     const difficulty = compute_difficulty(physics.distance_travelled, palette.fog_density_base);
-    field.density = difficulty.iceberg_density;
+    const cap = onboarding.density_cap;
+    field.density = cap !== null ? Math.min(difficulty.iceberg_density, cap) : difficulty.iceberg_density;
     current_fog_density = difficulty.fog_density;
     (scene.fog as THREE.FogExp2).density = difficulty.fog_density;
     ocean.set_fog_density(difficulty.fog_density);
