@@ -1,19 +1,15 @@
 # Titanic: Iceberg Run
 
-Captain the RMS Titanic across a hand-painted "Toy Atlantic". Avoid colliding with icebergs, collect commemorative cards, and chase your daily streak. Built with Three.js, 100% procedural.
+Captain the RMS Titanic through a cinematic North Atlantic crossing. Avoid colliding with icebergs, collect commemorative cards, and chase your daily streak. Built with Three.js and original procedural runtime art.
 
 ## Gameplay
 
-- **Goal:** survive the crossing - dodge procedurally spawned icebergs that get denser the further you sail
-- **Grazes** damage the hull; a **head-on hit at speed** sinks her instantly with a cinematic sinking sequence
-- **Near misses** build a score streak with slow-mo flair - skim the ice, don't touch it
-- **26 collectible cards** across Moments / Ships / Feats suits with 4 rarities, earned deterministically from things that actually happen in your runs; freeze-frame art is captured at the earn moment
-- **4 unlockable ship liveries** (Royal Mail Red, Brass & Teak, Ghost Ship, Rainbow Funnels) gated by card-set completion
-- **Daily Voyage:** a date-seeded iceberg field, one scored attempt per day, streak tracking and exclusive cards
-- **Records board:** local top-10 per mode with a confetti NEW BEST celebration
-- **3 moods:** Dusk, Night, Aurora - each repaints the whole world
-- Realistic inertia: she is slow to turn and slow to stop - manage the engine telegraph carefully
-- First-run guided onboarding; full touch controls on mobile
+- Survive the crossing as the procedurally spawned iceberg field grows denser.
+- Grazes damage the hull; a high-speed head-on hit triggers the cinematic sinking sequence.
+- Near misses build a score streak with slow-motion feedback.
+- Collect 26 deterministic cards, unlock cosmetic liveries, play the daily voyage, and save local records.
+- Day, Dusk, Night, Aurora, and Storm presets repaint the world; a long voyage also gathers restrained cloud, mist, and reflection breakup.
+- The telegraph, turning radius, momentum, and collision rules intentionally make the ship feel heavy.
 
 ## Controls
 
@@ -22,44 +18,51 @@ Captain the RMS Titanic across a hand-painted "Toy Atlantic". Avoid colliding wi
 | `W` / `S` (or arrows) | Engine telegraph up / down (Full Astern to Full Ahead) |
 | `A` / `D` (or arrows) | Rudder port / starboard |
 | `V` | Toggle bridge / chase camera |
-| `C` | Cinematic camera (cycling shots) |
-| `P` | Mood: Dusk / Night / Aurora |
-| `G` | Card gallery |
-| `D` | Daily Voyage |
-| `R` | Records board |
-| `Q` / `M` / `N` | Quality / reduced motion / music toggles |
-| `Enter` or click | Start / restart |
+| `C` | Cycle cinematic cameras |
+| `P` | Weather: Day / Dusk / Night / Aurora / Storm |
+| `G` / `D` / `R` | Card gallery / Daily Voyage / Records |
+| `Q` / `M` / `N` | Post effects / reduced motion / music |
+| `F2` / `F3` | Render quality tier / performance overlay |
+| `Enter` or canvas click | Start / restart |
 
-On touch devices: left-thumb telegraph slider, right-thumb rudder drag, CAM button.
+Touch devices use the telegraph controls, rudder drag, and CAM button.
 
-## Tech
+## Rendering
 
-- Three.js + TypeScript + Vite, fully procedural (no external assets)
-- Toon gradient-ramp shading, palette-driven gradient sky dome with animated aurora, bloom + vignette post-processing
-- Shader ocean with a CPU wave mirror for ship bobbing; wake foam, bow spray, ice shards, bumpable flotsam
-- Procedural WebAudio: ambience, engine hum, horn, collision crunch, rarity stings, and an intensity-following pentatonic music layer
-- No backend - static site, persistence via localStorage (`?debug=metrics` shows local engagement stats)
+- Three.js r182, TypeScript, Vite, WebGL2 baseline, adaptive Low/Medium/High/Ultra quality.
+- Original hybrid Gerstner ocean with a shared CPU/GPU spectrum, procedural small-wave detail, Fresnel, optical-depth color proxy, cadence-controlled planar reflection, crest/ship/ice foam, wake, and spray.
+- Camera-relative clouds/haze/stars/moon/lightning, rain/mist, cinematic color grading, bloom, and a procedural PBR Titanic/iceberg fallback.
+- No backend. Local progression uses `localStorage`. Use `?debug=metrics`, `?debug=perf`, or `?debug=ocean` for diagnostics.
+
+Before adding external art, read:
+
+- [Cinematic architecture and validation guide](docs/CINEMATIC_UPGRADE.md)
+- [Asset and licence register](docs/ASSET_AND_LICENSES.md)
+- [Titanic and iceberg art-production brief](docs/ASSET_GENERATION_BRIEFS.md)
 
 ## Development
 
-```bash
+```powershell
 bun install
-bun run dev      # dev server at http://localhost:5173
-bun run build    # typecheck + production build to dist/
-bun run preview  # preview the production build
+bun run dev
+bun run build
+bun run preview
+# with a dev/preview server running:
+bun run qa:cinematic
 ```
 
-## Project Structure
+## Project structure
 
-```
+```text
 src/
-├── main.ts        # bootstrap + game loop
-├── core/          # game state, input, audio
-├── world/         # ocean, sky, iceberg field
-├── ship/          # titanic model, physics, collision, sinking
-├── camera/        # camera director (chase / bridge / cinematic)
-├── gameplay/      # missions, rewards, scoring, difficulty
-└── ui/            # HUD, menus, styles
+|- main.ts        # bootstrap and game loop
+|- ocean/         # Gerstner spectrum, water material, reflection, authoring controls
+|- environment/   # rain and mist
+|- rendering/     # quality policy and performance overlay
+|- core/          # game state, input, audio, post processing
+|- world/         # sky, palette, iceberg field, ocean facade
+|- ship/          # PBR procedural ship, physics, collision, wake, sinking
+|- camera/        # chase, bridge, and cinematic camera director
+|- gameplay/      # scoring, difficulty, cards, rewards
+`- ui/            # HUD and menus
 ```
-
-`GAME_PLAN.md` tracks the milestone checklist the build loop executed against.

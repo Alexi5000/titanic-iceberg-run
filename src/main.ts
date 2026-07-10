@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { Ocean } from './world/ocean';
 import { Sky } from './world/sky';
-import { load_palette, save_palette, next_palette, Palette } from './world/palette';
+import { load_palette, save_palette, next_palette, Palette, PALETTES } from './world/palette';
 import { TitanicShip } from './ship/titanic_model';
 import { ShipPhysics, TelegraphOrder } from './ship/ship_physics';
 import { InputManager } from './core/input_manager';
@@ -21,7 +21,7 @@ import { Hud, ToastMessage } from './ui/hud';
 import { Menus } from './ui/menus';
 import { compute_difficulty } from './gameplay/difficulty';
 import { AudioManager } from './core/audio_manager';
-import { PostProcessing } from './core/post_processing';
+import { is_cinematic_look, PostProcessing } from './core/post_processing';
 import { JuiceSystem } from './gameplay/juice';
 import { WakeEffects } from './ship/wake_effects';
 import { Flotsam } from './world/flotsam';
@@ -39,18 +39,30 @@ import { RecordsBoard } from './gameplay/records';
 import { RecordsOverlay, celebrate_confetti } from './ui/records_ui';
 import { Metrics } from './core/metrics';
 import { CARD_DEFS } from './gameplay/cards';
+import { Precipitation } from './environment/precipitation';
+import { OceanDebugGui } from './ocean/ocean_debug_gui';
+import type { OceanWeatherId } from './ocean/wave_spectrum';
+import { create_ocean_interaction_sources } from './ocean/water_material';
+import { QualityManager, QUALITY_LEVELS } from './rendering/quality_manager';
+import { estimate_texture_memory_bytes, GpuPassTimer, PerformanceOverlay } from './rendering/performance_overlay';
 
 let palette: Palette = load_palette();
 
 const container = document.getElementById('app');
 if (!container) throw new Error('missing #app container');
 
+const touch_active = is_touch_device();
+
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   powerPreference: 'high-performance',
   preserveDrawingBuffer: true, // needed for freeze-frame card art capture
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const quality = new QualityManager({
+  gl: renderer.getContext(),
+  initial_quality: touch_active ? 'low' : undefined,
+});
+quality.apply_pixel_ratio(renderer);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 container.appendChild(renderer.domElement);
@@ -65,20 +77,41 @@ camera.lookAt(0, 15, 0);
 let sky = new Sky(palette);
 scene.add(sky.group);
 
+const precipitation = new Precipitation();
+precipitation.set_intensity(palette.precipitation);
+scene.add(precipitation.group);
+
 const ocean = new Ocean(palette, sky.moon_dir);
 scene.add(ocean.mesh);
+
+let ocean_debug: OceanDebugGui | null = null;
+
+function palette_for_ocean_weather(weather: OceanWeatherId): Palette {
+  const palette_id = weather === 'day'
+    ? 'day'
+    : weather === 'sunset'
+      ? 'dusk'
+      : weather === 'storm'
+        ? 'storm'
+        : 'night';
+  return PALETTES.find((candidate) => candidate.id === palette_id) ?? PALETTES[0];
+}
 
 function apply_palette(next: Palette): void {
   palette = next;
   save_palette(palette);
-  scene.remove(sky.group);
-  sky = new Sky(palette);
-  scene.add(sky.group);
+  // Palette swaps are intentionally uniform/light updates rather than scene
+  // recreation; this avoids leaking old dome/star GPU resources during play.
+  sky.set_palette(palette);
   ocean.set_palette(palette);
   field.set_palette(palette);
   flotsam.set_palette(palette);
+  precipitation.set_intensity(palette.precipitation);
+  if (is_cinematic_look(palette.id)) post.set_look(palette.id);
   (scene.fog as THREE.FogExp2).color.setHex(palette.fog_color);
   (scene.fog as THREE.FogExp2).density = palette.fog_density_base;
+  voyage_storm_intensity = Math.max(voyage_storm_intensity, palette.storm_intensity);
+  ocean_debug?.sync(quality.current_level, ocean.current_weather.id);
 }
 
 const ship = new TitanicShip();
@@ -91,6 +124,7 @@ const state = new GameState();
 const field = new IcebergField();
 field.set_palette(palette);
 scene.add(field.group);
+const ocean_foam_interactions = create_ocean_interaction_sources();
 const collision = new CollisionSystem();
 
 const director = new CameraDirector();
@@ -158,6 +192,7 @@ gallery.on_skin_change = apply_unlocks;
 apply_unlocks();
 let run_new_cards: { def: CardDef; earned: EarnedCard }[] = [];
 let current_fog_density = palette.fog_density_base;
+let voyage_storm_intensity = palette.storm_intensity;
 
 const detector = new CardDetector(
   (def) => {
@@ -239,8 +274,7 @@ on_mission_complete_for_cards = () => detector.on_mission_complete(card_context(
 
 const onboarding = new Onboarding(document.body);
 
-// ---------- Touch controls + auto quality-down ----------
-const touch_active = is_touch_device();
+// ---------- Touch controls ----------
 const touch = new TouchControls(document.body);
 touch.bind(
   (order) => physics.set_telegraph(order),
@@ -265,6 +299,7 @@ function start_run(mode: 'endless' | 'daily' = 'endless'): void {
   flotsam.scatter(physics.x, physics.z);
   detector.reset_run();
   run_new_cards = [];
+  voyage_storm_intensity = palette.storm_intensity;
   menus.gameover_extra.replaceChildren();
   gallery.close();
   run_finalized = false;
@@ -347,22 +382,91 @@ field.seed_initial(physics.x, physics.z, physics.heading);
 juice.begin_intro();
 
 const post = new PostProcessing(renderer, scene, camera);
+if (is_cinematic_look(palette.id)) post.set_look(palette.id);
 
-if (touch_active) {
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+let gpu_timer: GpuPassTimer | null = null;
+const renderer_context = renderer.getContext();
+if (typeof WebGL2RenderingContext !== 'undefined' && renderer_context instanceof WebGL2RenderingContext) {
   try {
-    // Default mobile to low quality unless the player explicitly chose otherwise.
-    if (localStorage.getItem('tir.quality.v1') === null) post.set_quality(false);
+    gpu_timer = new GpuPassTimer(renderer_context);
   } catch {
-    post.set_quality(false);
+    // EXT_disjoint_timer_query_webgl2 is optional; the overlay still reports CPU-frame metrics.
   }
+}
+ocean.set_gpu_timer(gpu_timer);
+
+const performance_overlay = new PerformanceOverlay({
+  parent: document.body,
+  renderer,
+  gpu_timer,
+});
+const render_target_size = new THREE.Vector2();
+
+function refresh_texture_memory_estimate(): void {
+  renderer.getDrawingBufferSize(render_target_size);
+  const post_scale = post.current_profile.render_scale;
+  const post_width = Math.max(1, Math.round(render_target_size.x * post_scale));
+  const post_height = Math.max(1, Math.round(render_target_size.y * post_scale));
+  // Composer ping-pong HDR buffers + bloom mip chain, plus the optional planar target.
+  const composer_bytes = estimate_texture_memory_bytes({
+    width: post_width,
+    height: post_height,
+    bytes_per_pixel: 8,
+    mipmaps: false,
+  }) * 3;
+  const reflection_scale = quality.state.preset.reflection_scale;
+  const reflection_bytes = reflection_scale > 0
+    ? estimate_texture_memory_bytes({
+      width: Math.max(1, Math.round(render_target_size.x * reflection_scale)),
+      height: Math.max(1, Math.round(render_target_size.y * reflection_scale)),
+      bytes_per_pixel: 8,
+      mipmaps: false,
+    })
+    : 0;
+  performance_overlay.set_texture_memory_bytes(composer_bytes + reflection_bytes, renderer.info.memory.textures);
+}
+
+function apply_render_pixel_ratio(): void {
+  quality.apply_pixel_ratio(renderer);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  post.set_renderer_pixel_ratio(quality.state.pixel_ratio);
+  post.set_size(window.innerWidth, window.innerHeight);
+  refresh_texture_memory_estimate();
+}
+
+function apply_render_quality(): void {
+  const preset = quality.state.preset;
+  post.apply_quality_preset(preset);
+  ocean.set_quality(preset.id);
+  ship.set_quality(preset.id);
+  wake.set_quality(preset.id);
+  const rain_count = Math.max(80, Math.round(preset.particle_count * 0.88));
+  const mist_count = Math.max(20, Math.round(preset.particle_count * 0.13));
+  precipitation.set_quality(rain_count, mist_count);
+  apply_render_pixel_ratio();
+  ocean_debug?.sync(quality.current_level, ocean.current_weather.id);
+}
+
+apply_render_quality();
+
+if (OceanDebugGui.requested) {
+  ocean_debug = new OceanDebugGui({
+    parent: document.body,
+    ocean,
+    quality_id: quality.current_level,
+    weather_id: ocean.current_weather.id,
+    on_quality_change: (next_quality) => {
+      if (quality.set_quality(next_quality)) apply_render_quality();
+      else ocean_debug?.sync(quality.current_level, ocean.current_weather.id);
+    },
+    on_weather_change: (next_weather) => apply_palette(palette_for_ocean_weather(next_weather)),
+  });
 }
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  post.set_size(window.innerWidth, window.innerHeight);
+  apply_render_pixel_ratio();
 });
 
 const clock = new THREE.Clock();
@@ -370,7 +474,7 @@ let elapsed = 0;
 
 /** Mouse fallback so the run can start without keyboard focus. */
 let click_to_start = false;
-window.addEventListener('pointerdown', () => {
+renderer.domElement.addEventListener('pointerdown', () => {
   click_to_start = true;
 });
 
@@ -405,6 +509,15 @@ function frame(): void {
 
   if (input.was_pressed('KeyP')) apply_palette(next_palette(palette));
   if (input.was_pressed('KeyQ')) post.toggle();
+  if (input.was_pressed('F2')) {
+    const current_index = QUALITY_LEVELS.indexOf(quality.current_level);
+    const next_quality = QUALITY_LEVELS[(current_index + 1) % QUALITY_LEVELS.length];
+    if (quality.set_quality(next_quality)) {
+      apply_render_quality();
+      toast_queue.push({ title: 'RENDER QUALITY', body: quality.state.preset.label });
+    }
+  }
+  if (input.was_pressed('F3')) performance_overlay.set_visible(!performance_overlay.is_visible);
   if (input.was_pressed('KeyM')) juice.toggle_reduced_motion();
   if (input.was_pressed('KeyN')) audio.toggle_music();
 
@@ -431,6 +544,22 @@ function frame(): void {
     ocean.set_fog_density(difficulty.fog_density);
   }
 
+  // A long voyage gradually gathers cloud, mist, and rougher reflection breakup.
+  // The manual storm palette remains authoritative; the procedural ramp peaks at
+  // a readable partial storm so gameplay visibility is never entirely lost.
+  const distance_storm = state.phase === GamePhase.Playing
+    ? THREE.MathUtils.smoothstep(physics.distance_travelled, 12000, 28000) * 0.52
+    : 0;
+  const target_storm = Math.max(palette.storm_intensity, distance_storm);
+  voyage_storm_intensity += (target_storm - voyage_storm_intensity) * (1 - Math.exp(-delta * 0.14));
+  const visual_storm = Math.max(voyage_storm_intensity, ocean.current_tuning.storm_intensity);
+  sky.set_weather(
+    THREE.MathUtils.clamp(palette.cloud_coverage + visual_storm * 0.2, 0, 1),
+    visual_storm,
+  );
+  precipitation.set_intensity(Math.max(palette.precipitation, visual_storm * 0.34));
+  ocean.set_visual_storm_intensity(visual_storm);
+
   audio.update_engine(physics.speed);
   audio.update_music(
     raw_delta,
@@ -444,6 +573,8 @@ function frame(): void {
   physics.update(delta);
 
   field.update(delta, elapsed, physics.x, physics.z, physics.heading, physics.speed);
+  const ocean_foam_count = field.write_foam_interactions(ocean_foam_interactions, physics.x, physics.z);
+  ocean.set_iceberg_interactions(ocean_foam_interactions, ocean_foam_count);
   const collision_result = collision.update(delta, physics, field, state);
   if (collision_result.hit && collision_result.berg) {
     wake.burst_shards(
@@ -460,8 +591,6 @@ function frame(): void {
   ship.group.position.z = physics.z;
   ship.group.rotation.y = physics.heading;
 
-  sky.update(elapsed);
-  ocean.update(elapsed, camera, physics.x, physics.z);
   ship.update(elapsed, delta, physics.turn_heel);
   ship.group.position.y += juice.intro_offset_y;
 
@@ -488,6 +617,19 @@ function frame(): void {
   post.set_pulse(juice.pulse);
   audio.set_slowmo(juice.pulse);
 
+  // Camera-relative environment passes happen after the final camera shake so
+  // sky, rain, water refraction, and planar reflection share one view origin.
+  sky.update(elapsed, camera.position.x, camera.position.y, camera.position.z);
+  ship.set_lod_distance(camera.position.distanceTo(ship.group.position));
+  const ocean_weather = ocean.current_weather;
+  const wind_x = Math.sin(ocean_weather.wind_direction_offset_radians) * ocean_weather.wind_speed_mps * 0.06;
+  const wind_z = Math.cos(ocean_weather.wind_direction_offset_radians) * ocean_weather.wind_speed_mps * 0.06;
+  precipitation.update(delta, camera.position.x, camera.position.y, camera.position.z, wind_x, wind_z, elapsed);
+  ocean.update(elapsed, camera, physics.x, physics.z, physics.heading, physics.speed);
+
+  if (quality.update(raw_delta * 1000)) apply_render_pixel_ratio();
+  ocean.render_reflections(renderer, scene, camera);
+
   while (toast_queue.length > 0) {
     const toast = toast_queue.shift();
     if (toast) hud.show_toast(toast);
@@ -499,7 +641,8 @@ function frame(): void {
 
   input.end_frame();
 
-  post.render();
+  post.render(raw_delta);
+  performance_overlay.update(raw_delta * 1000);
   requestAnimationFrame(frame);
 }
 

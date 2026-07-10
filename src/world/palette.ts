@@ -25,9 +25,40 @@ export interface Palette {
   key_light_intensity: number;
   rim_light_color: number;
   has_aurora: boolean;
+  /** 0..1 procedural cloud coverage used by the cinematic sky. */
+  cloud_coverage: number;
+  /** 0..1 storm severity shared by sky, water, particles, and post. */
+  storm_intensity: number;
+  /** 0..1 precipitation amount; zero for clear presets. */
+  precipitation: number;
 }
 
 export const PALETTES: Palette[] = [
+  {
+    id: 'day',
+    label: 'North Atlantic Day',
+    sky_top: 0x4c86b5,
+    sky_horizon: 0xb7d3df,
+    sky_bottom: 0x6e94a9,
+    ocean_deep: 0x06263a,
+    ocean_surface: 0x1d6e82,
+    fog_color: 0xa7bec8,
+    fog_density_base: 0.00082,
+    moon_color: 0xfff1c7,
+    moon_glow: 0xffcf87,
+    star_opacity: 0,
+    berg_color: 0xe5f3fb,
+    berg_emissive: 0x1e526d,
+    ambient_color: 0x87a8bf,
+    ambient_intensity: 1.15,
+    key_light_color: 0xfff3d1,
+    key_light_intensity: 2.2,
+    rim_light_color: 0x9fd9f3,
+    has_aurora: false,
+    cloud_coverage: 0.32,
+    storm_intensity: 0,
+    precipitation: 0,
+  },
   {
     id: 'dusk',
     label: 'Dusk',
@@ -49,6 +80,9 @@ export const PALETTES: Palette[] = [
     key_light_intensity: 1.6,
     rim_light_color: 0xff9e7a,
     has_aurora: false,
+    cloud_coverage: 0.18,
+    storm_intensity: 0,
+    precipitation: 0,
   },
   {
     id: 'night',
@@ -71,6 +105,9 @@ export const PALETTES: Palette[] = [
     key_light_intensity: 1.35,
     rim_light_color: 0x5a7ca6,
     has_aurora: false,
+    cloud_coverage: 0.26,
+    storm_intensity: 0,
+    precipitation: 0,
   },
   {
     id: 'aurora',
@@ -93,6 +130,34 @@ export const PALETTES: Palette[] = [
     key_light_intensity: 1.45,
     rim_light_color: 0x6be0a8,
     has_aurora: true,
+    cloud_coverage: 0.22,
+    storm_intensity: 0,
+    precipitation: 0,
+  },
+  {
+    id: 'storm',
+    label: 'Storm',
+    sky_top: 0x080d16,
+    sky_horizon: 0x334454,
+    sky_bottom: 0x111a25,
+    ocean_deep: 0x010912,
+    ocean_surface: 0x0c2d40,
+    fog_color: 0x202f3c,
+    fog_density_base: 0.00215,
+    moon_color: 0xd4e7f4,
+    moon_glow: 0x8eb8d6,
+    star_opacity: 0.08,
+    berg_color: 0xbcd3df,
+    berg_emissive: 0x173546,
+    ambient_color: 0x35495b,
+    ambient_intensity: 0.72,
+    key_light_color: 0x9cb6cb,
+    key_light_intensity: 1.25,
+    rim_light_color: 0x66849d,
+    has_aurora: false,
+    cloud_coverage: 0.92,
+    storm_intensity: 1,
+    precipitation: 0.82,
   },
 ];
 
