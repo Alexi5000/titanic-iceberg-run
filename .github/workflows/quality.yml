@@ -1,0 +1,90 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, type-check, test, and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.3
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint repository boundaries
+        run: bun run lint
+
+      - name: Type-check TypeScript
+        run: bun run typecheck
+
+      - name: Run repository smoke tests
+        run: bun run test
+
+      - name: Build production bundle
+        run: bun run build
+
+  cinematic-smoke:
+    name: Cinematic browser smoke test
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.3
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Chromium for Playwright
+        run: bunx playwright install --with-deps chromium
+
+      - name: Build and serve preview
+        run: |
+          bun run build
+          bun run preview -- --host 127.0.0.1 > /tmp/titanic-preview.log 2>&1 &
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/titanic-preview.log
+          exit 1
+
+      - name: Run cinematic validation
+        env:
+          QA_URL: http://127.0.0.1:4173/
+        run: bun run qa:cinematic
