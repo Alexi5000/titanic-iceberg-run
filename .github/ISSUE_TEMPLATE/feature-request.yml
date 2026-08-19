@@ -1,0 +1,69 @@
+name: Feature request
+description: Propose a focused, maintainable improvement to the game or its contributor experience.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proposals should preserve the browser-only privacy model, respect asset provenance, and explain how the change will be validated.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What player, contributor, accessibility, performance, or maintenance need does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful change, including affected game systems if known.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Explain other approaches and why this proposal is preferred.
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Primary impact area
+      options:
+        - Gameplay or progression
+        - Rendering or performance
+        - Controls or accessibility
+        - Documentation or contributor workflow
+        - Testing or continuous integration
+        - Asset pipeline
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: State the applicable commands, manual path, and any browser or visual evidence needed.
+      placeholder: Run bun run quality and QA_URL=http://127.0.0.1:4173 bun run qa:cinematic after verifying the affected interaction manually.
+    validations:
+      required: true
+  - type: textarea
+    id: assets
+    attributes:
+      label: Asset, dependency, or privacy impact
+      description: Identify new assets, packages, network calls, environment values, licenses, or state changes. State None if not applicable.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate proposal.
+          required: true
+        - label: I reviewed CONTRIBUTING.md and the asset policy where relevant.
+          required: true

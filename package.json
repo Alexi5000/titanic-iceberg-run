@@ -1,15 +1,19 @@
 {
   "name": "titanic-iceberg-run",
   "version": "0.1.0",
-  "description": "Titanic: Iceberg Run - captain the Titanic across the North Atlantic and avoid colliding with icebergs. Built with Three.js.",
+  "description": "Titanic: Iceberg Run - a cinematic browser navigation game built with Three.js, TypeScript, and original procedural runtime art.",
   "type": "module",
   "module": "src/main.ts",
   "packageManager": "bun@1.3.3",
   "scripts": {
     "dev": "vite",
+    "lint": "node scripts/check-repository-style.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "qa:cinematic": "node scripts/qa_cinematic.mjs"
+    "qa:cinematic": "node scripts/qa_cinematic.mjs",
+    "quality": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "three": "^0.182.0"

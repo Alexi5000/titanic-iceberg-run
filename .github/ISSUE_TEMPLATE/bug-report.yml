@@ -1,0 +1,75 @@
+name: Bug report
+description: Report a reproducible defect in gameplay, rendering, controls, persistence, build, or validation.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Titanic: Iceberg Run. Do not include secrets, private URLs, or security vulnerabilities. Use SECURITY.md for security reports.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and the gameplay or validation impact.
+      placeholder: The performance overlay does not appear when I load ?debug=perf.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest sequence that reliably reproduces the problem.
+      placeholder: |
+        1. Run bun run dev
+        2. Open http://localhost:5173/?debug=perf
+        3. Press Enter
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain what should have happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Gameplay or physics
+        - Rendering or visual effects
+        - Controls or accessibility
+        - Progression or local persistence
+        - Build, test, or CI
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and version, operating system, device type, and game quality tier if relevant.
+      placeholder: Chromium 140 on Ubuntu 24.04, desktop, High quality
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or visual evidence
+      description: Add relevant console output, screenshot, or screen recording. Remove personal or sensitive information first.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed secrets, personal data, and private URLs from this report.
+          required: true
