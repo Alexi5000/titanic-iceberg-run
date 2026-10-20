@@ -7,11 +7,15 @@
 
 > This project is a fictional interactive experience. It does not depict historical events as a simulation and is not affiliated with any Titanic estate or organization.
 
-## Alexi5000 Project Purpose
+## Why this exists
 
-This is **Alexi5000’s applied real-time interaction and visual-systems reference implementation** for agent-building and automation work. Alex Cinovoj brings more than a year of hands-on experience building agents, integrations, and AI-assisted software with Cursor, Claude, Codex-class tools, MCP patterns, and practical automation systems. The repository demonstrates how that workflow translates into a focused, inspectable front-end project: explicit architecture, reproducible checks, accessible interaction surfaces, and a small quality contract that can be extended by human or AI contributors.
+**What it does.** Titanic: Iceberg Run is a browser game built with TypeScript, Three.js, Vite, and WebGL2. You steer a procedurally rendered RMS Titanic through a generated North Atlantic ice field with an engine telegraph and a rudder that carry momentum, collect 26 deterministic cards, and keep a daily-voyage streak. There is no backend: progression and records persist only in browser `localStorage`, and no credentials are involved.
 
-The goal is not merely to preserve a playable prototype. It is to maintain an auditable reference for coordinating a complex client-side system—rendering, input, physics, state, persistence, and UI—while keeping contribution and verification paths clear.
+**Who it serves.** Players who want a short, replayable arcade-style crossing in a desktop or mobile browser, including players who rely on operating-system reduced-motion settings; and developers who want a readable reference for a client-only Three.js game with explicit lint, type, test, and build checks.
+
+**Why Alex built it.** The repository's policy document records the purpose (`FORK_POLICY.md`, added in commit `be54a97`, 2026-08-19, "chore: establish professional quality baseline"): make a complex client-side experience (rendering, ocean and environmental effects, physics, input, gameplay state, local persistence, and UI) inspectable and reproducible without a backend or account system, as a practical companion to Alex Cinovoj's agent-building and AI-assisted engineering work. The game itself was built in a two-day burst: the scaffold landed on 2026-06-11 (first commit `18df24d`, "feat(scaffold): bootstrap vite + typescript + three.js project with game plan"), GitHub Pages deployment the same day (`401fa6b`), and the v2 release with cards, daily voyages, mobile controls, and an automated Playwright QA pass on 2026-06-12 (`eaa6036`, `2da9b75`). A cinematic ocean upgrade followed on 2026-07-09 (`134ee16`). October 2026 maintenance removed vulnerable build dependencies (PR #1) and stopped the start-screen pulse under reduced motion (PR #2).
+
+**Real-world use case (2025-2026 evidence).** **Verified in this repository.** A player who has "Reduce motion" enabled in their operating system opens the deployed game at <https://alexi5000.github.io/titanic-iceberg-run/>, which `.github/workflows/deploy.yml` publishes from `main`. The game reads `prefers-reduced-motion: reduce` in `src/gameplay/juice.ts` and `src/rendering/quality_manager.ts`, and `src/ui/ui_styles.ts` disables the start-screen pulse and other UI animation under that media query (PR #2, merged 2026-10-20); the `M` key toggles reduced motion in-game for players whose platform does not expose the setting. This follows current guidance: MDN documents the media feature and the OS settings that drive it (page updated 2026-06-10)[^1], and 2026 practitioner guidance stresses reducing rather than removing motion and cites WCAG 2.3.3, Animation from Interactions[^2]. The deployment workflow, the live page, and the preference checks are in this repository; no automated test exercises the reduced-motion path, and `bun run qa:cinematic` requires a running browser server.
 
 ## Experience
 
@@ -54,7 +58,7 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Open the local URL printed by Vite, usually `http://localhost:5173`. Build and preview the production bundle with the following commands.
+Open the local URL printed by Vite, usually `http://localhost:5173`. The `main` branch is published to GitHub Pages at <https://alexi5000.github.io/titanic-iceberg-run/> by `.github/workflows/deploy.yml`. Build and preview the production bundle with the following commands.
 
 ```bash
 bun run build
@@ -97,10 +101,6 @@ The game offers opt-in diagnostic modes that do not require code changes:
 ?debug=ocean    # ocean authoring controls
 ```
 
-## Use Cases
-
-This repository is suitable for validating a browser-only gameplay loop, studying a TypeScript and Three.js project organized by runtime responsibility, testing agent-assisted changes against explicit repository contracts, and evaluating low-dependency continuous integration patterns for visual client applications. It is also a constrained reference for maintaining local-first browser state without introducing a backend or handling user credentials.
-
 ## Project Structure
 
 ```text
@@ -127,8 +127,15 @@ Contributions should preserve deterministic behavior, maintain the browser-only 
 
 ## Security and Support
 
-Please report suspected security vulnerabilities privately according to [SECURITY.md](SECURITY.md). For usage questions, bug triage, and contribution support, start with [SUPPORT.md](SUPPORT.md). General project policy, intent, and maintenance boundaries are described in [FORK_POLICY.md](FORK_POLICY.md).
+Please report suspected security vulnerabilities privately according to [SECURITY.md](SECURITY.md). Dependency and code-scanning status: 0 open Dependabot alerts and 0 open CodeQL alerts as of 2026-10-20. The `Quality` workflow runs on pushes to `main` and on pull requests, and GitHub CodeQL default setup is enabled with the extended query suite on a weekly schedule. For usage questions, bug triage, and contribution support, start with [SUPPORT.md](SUPPORT.md). General project policy, intent, and maintenance boundaries are described in [FORK_POLICY.md](FORK_POLICY.md).
 
 ## Origin and Attribution
 
-`Alexi5000/titanic-iceberg-run` is an independent Alexi5000 repository rather than a GitHub fork. The project’s source, game design, validation material, and asset provenance are maintained in this repository. Asset rules and third-party attribution requirements are documented in the [asset and licence register](docs/ASSET_AND_LICENSES.md).
+`Alexi5000/titanic-iceberg-run` is an independent Alexi5000 repository rather than a GitHub fork. The project's source, game design, validation material, and asset provenance are maintained in this repository. Asset rules and third-party attribution requirements are documented in the [asset and licence register](docs/ASSET_AND_LICENSES.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+[^1]: MDN Web Docs, "prefers-reduced-motion CSS media feature", last modified 2026-06-10. https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion
+[^2]: OpenReplay blog, "Using prefers-reduced-motion for Accessible Animation", 2026-05-27. https://blog.openreplay.com/prefers-reduced-motion-accessible-animation
