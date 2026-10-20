@@ -208,6 +208,9 @@ const CSS = `
     animation: pulse 1.6s ease-in-out infinite;
   }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) {
+    .press-start { animation: none; }
+  }
   .stats-card {
     background: rgba(6, 12, 22, 0.72);
     border: 1px solid rgba(200, 162, 74, 0.4);
