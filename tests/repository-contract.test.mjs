@@ -41,9 +41,9 @@ test('repository health and contribution files are present', () => {
 test('README communicates purpose, verification, support, and project origin', () => {
   const readme = read('README.md');
   for (const heading of [
-    '## Alexi5000 Project Purpose',
+    '## Why this exists',
+    '**Real-world use case',
     '## Verified Setup',
-    '## Use Cases',
     '## Security and Support',
     '## Origin and Attribution',
   ]) {
